@@ -9,6 +9,7 @@ import Data.Show.Generic ( genericShow )
 import Data.Maybe ( Maybe(..) )
 import Data.Either ( note )
 import Data.String ( length, take, drop )
+import Data.Map as M
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, JsonDecodeError(..), getField)
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Argonaut.Encode.Generic (genericEncodeJson)
@@ -20,30 +21,11 @@ derive instance genericReturnCode ∷ Generic ReturnCode _
 instance eqReturnCode             ∷ Eq      ReturnCode where eq = genericEq
 instance showReturnCode           ∷ Show    ReturnCode where
   show (ReturnCode n) = show n
-data    LoopStatus = LoopGo
-                   | LoopReset
-                   | LoopError String
-                   | LoopNULL
-instance encodeLoopStatus ∷ EncodeJson LoopStatus where
-  encodeJson LoopGo          = encodeJson   "loopGo"
-  encodeJson LoopReset       = encodeJson   "loopReset"
-  encodeJson (LoopError err) = encodeJson $ "loopError:" <> err
-  encodeJson LoopNULL        = encodeJson   "loopNULL"
-instance decodeLoopStatus ∷ DecodeJson LoopStatus where
-  decodeJson json = do
-    string ← decodeJson json
-    note (TypeMismatch "LoopStatus:") (lsFromStr string)
-lsFromStr ∷ String → Maybe LoopStatus
-lsFromStr "loopGo"    = Just LoopGo
-lsFromStr "loopReset" = Just LoopReset
-lsFromStr "loopNULL"  = Just LoopNULL
-lsFromStr str         = if (length str) > 9 then
-    if (take 9 str) ≡ "loopError" then
-      Just $ LoopError (drop 9 str)
-    else Nothing
-  else Nothing
 type    FilterFn α = α → Boolean
 newtype FindType α = FindType Int
+foreign import data Date ∷ Type
+newtype Event = Event Int
+
 
 -- memory
 foreign import data MemoryGlobal ∷ Type
@@ -52,6 +34,33 @@ foreign import data RawMemoryGlobal ∷ Type
 -- game
 foreign import data GameGlobal ∷ Type
 foreign import data WorldMap ∷ Type
+type Cpu = { limit        ∷ Int
+           , tickLimit    ∷ Int
+           , bucket       ∷ Int
+           , shardLimits  ∷ M.Map String Int
+           , unlocked     ∷ Boolean
+           , unlockedTime ∷ Int }
+type Gcl = { level         ∷ Int
+           , progress      ∷ Int
+           , progressTotal ∷ Int }
+type Gpl = { level         ∷ Int
+           , progress      ∷ Int
+           , progressTotal ∷ Int }
+foreign import data InterShardMemory ∷ Type
+type Shard = { shardName ∷ String
+             , shardType ∷ String
+             , shardPtr  ∷ Boolean }
+type HeapStatistics =
+  { total_heap_size            ∷ Int
+  , total_heap_size_executable ∷ Int
+  , total_physical_size        ∷ Int
+  , total_available_size       ∷ Int
+  , used_heap_size             ∷ Int
+  , heap_size_limit            ∷ Int
+  , malloced_memory            ∷ Int
+  , peak_malloced_memory       ∷ Int
+  , does_zap_garbage           ∷ Int
+  , externally_allocated_size  ∷ Int }
 
 -- room position
 foreign import data RoomPosition ∷ Type
@@ -59,9 +68,18 @@ data TargetPosition α =
   TargetPt Int Int |
   TargetObj (RoomObject α) |
   TargetPos RoomPosition
+type ExitsInfo =
+  { "1" ∷ String
+  , "3" ∷ String
+  , "5" ∷ String
+  , "7" ∷ String }
 
 -- room
 foreign import data Room ∷ Type
+foreign import data RoomGlobal ∷ Type
+data RoomIdentifier = RoomName String | RoomObj Room
+type RoomStatus = { status ∷ String
+                  , timestamp ∷ Int }
 
 -- room terrain
 foreign import data RoomTerrain ∷ Type
@@ -92,50 +110,24 @@ type ConstructionSite = RoomObject RawConstructionSite
 -- creep
 foreign import data RawCreep ∷ Type
 type Creep = RoomObject RawCreep
+type BodyPart =
+  { boost ∷ Maybe String
+  , type  ∷ BodyPartType
+  , hits  ∷ Int }
 newtype BodyPartType = BodyPartType String
 derive instance genericBodyPartType ∷ Generic BodyPartType _
 instance eqBodyPartType             ∷ Eq      BodyPartType where eq   = genericEq
 instance showBodyPartType           ∷ Show    BodyPartType where show = genericShow
-data CreepType = CreepDrone | CreepNULL
-data Role      = RoleIdle
-               | RoleBuilder
-               | RoleHarvester
-               | RoleNULL
-data Job       = JobNULL
-instance showRole ∷ Show Role where
-  show RoleHarvester = "RoleHarvester"
-  show RoleBuilder   = "RoleBuilder"
-  show RoleIdle      = "RoleIdle"
-  show RoleNULL      = "RoleNULL"
-instance eqRoles ∷ Eq Role where
-  eq RoleNULL      RoleNULL      = true
-  eq RoleIdle      RoleIdle      = true
-  eq RoleHarvester RoleHarvester = true
-  eq RoleBuilder   RoleBuilder   = true
-  eq _             RoleNULL      = false
-  eq RoleNULL      _             = false
-  eq _             _             = false
-instance encodeRole ∷ EncodeJson Role where
-  encodeJson RoleIdle      = encodeJson "RoleIdle"
-  encodeJson RoleHarvester = encodeJson "RoleHarvester"
-  encodeJson RoleBuilder   = encodeJson "RoleBuilder"
-  encodeJson RoleNULL      = encodeJson "RoleNULL"
-instance decodeRole ∷ DecodeJson Role where
-  decodeJson json = do
-    string ← decodeJson json
-    note (TypeMismatch "Role:") (roleFromStr string)
-roleFromStr ∷ String → Maybe Role
-roleFromStr "RoleHarvester" = Just RoleHarvester
-roleFromStr "RoleBuilder"   = Just RoleBuilder
-roleFromStr "RoleIdle"      = Just RoleIdle
-roleFromStr "RoleNULL"      = Just RoleNULL
-roleFromStr _               = Nothing
-roleList = [RoleIdle, RoleHarvester, RoleBuilder, RoleNULL] ∷ Array Role
+
+-- power creep
+foreign import data RawPowerCreep ∷ Type
+type PowerCreep = RoomObject RawPowerCreep
+newtype PowerClass = PowerClass String
 
 -- mineral
 foreign import data RawMineral ∷ Type
 type Mineral = RoomObject RawMineral
-
+newtype Density = Density Int
 -- resource
 foreign import data RawResource ∷ Type
 type Resource = RoomObject RawResource
@@ -160,6 +152,10 @@ type Nuke = RoomObject RawNuke
 -- flag
 foreign import data RawFlag ∷ Type
 type Flag = RoomObject RawFlag
+newtype Color = Color Int
+derive instance genericColor :: Generic Color _
+instance eqColor   ∷ Eq   Color where eq   = genericEq
+instance showColor ∷ Show Color where show = genericShow
 
 -- structure
 foreign import data RawStructure ∷ Type → Type
@@ -184,10 +180,22 @@ type Container = OwnedStructure RawContainer
 -- controller
 foreign import data RawController ∷ Type
 type Controller = OwnedStructure RawController
+type Reservation =
+  { username   ∷ String
+  , ticksToEnd ∷ Int }
+type Sign =
+  { username   ∷ String
+  , text       ∷ String
+  , time       ∷ Int
+  , dateTime   ∷ Date }
 
 -- extension
 foreign import data RawExtension ∷ Type
 type Extension = OwnedStructure RawExtension
+
+-- extractor
+foreign import data RawExtractor ∷ Type
+type Extractor = OwnedStructure RawExtractor
 
 -- factory
 foreign import data RawFactory ∷ Type
@@ -249,6 +257,7 @@ type Tower = OwnedStructure RawTower
 -- terminal
 foreign import data RawTerminal ∷ Type
 type Terminal = OwnedStructure RawTerminal
+foreign import data Market ∷ Type
 
 -- wall
 foreign import data RawWall ∷ Type
@@ -270,6 +279,7 @@ newtype Direction = Direction Int
 derive instance genericDirection ∷ Generic Direction _
 instance        eqDirection      ∷ Eq      Direction where eq   = genericEq
 instance        showDirection    ∷ Show    Direction where show = genericShow
+type Directions = Array Direction
 
 -- path
 type Path = Array PathStep
@@ -319,3 +329,12 @@ pathOpts =
   , heuristicWeight:              Nothing
   , serialize:                    Nothing
   , maxRooms:                     Nothing }
+foreign import data Goal ∷ Type
+foreign import data CostMatrix ∷ Type
+foreign import data PathFinder ∷ Type
+type RoomRoute = Array RoomExit
+type RoomExit = { exit ∷ FindType Int, room ∷ String }
+type ReturnPath = { path       ∷ Path
+                  , ops        ∷ Int
+                  , cost       ∷ Int
+                  , incomplete ∷ Boolean }

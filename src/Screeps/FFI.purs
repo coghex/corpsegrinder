@@ -1,8 +1,9 @@
 module Screeps.FFI where
 import Prelude
 import Effect (Effect)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isJust, fromJust)
 import Data.Function.Uncurried ( Fn3, runFn3 )
+import Partial.Unsafe (unsafePartial)
 
 foreign import unsafeField :: forall obj val. String -> obj -> val
 foreign import unsafeGetFieldEff :: forall obj val. String -> obj -> Effect val
@@ -30,3 +31,10 @@ foreign import toMaybeImpl :: forall a m. Fn3 (NullOrUndefined a) m (a -> m) m
 
 toMaybe :: forall a. NullOrUndefined a -> Maybe a
 toMaybe n = runFn3 toMaybeImpl n Nothing Just
+
+foreign import data JsObject ∷ Type
+foreign import selectMaybesImpl ∷ ∀ α. (Maybe α → Boolean)
+  → (Maybe α → α) → α → JsObject
+
+selectMaybes ∷ ∀ α. α → JsObject
+selectMaybes obj = unsafePartial $ selectMaybesImpl isJust fromJust obj

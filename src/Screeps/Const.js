@@ -18,6 +18,38 @@ exports.err_not_enough_extensions = ERR_NOT_ENOUGH_EXTENSIONS;
 exports.err_rcl_not_enough = ERR_RCL_NOT_ENOUGH;
 exports.err_gcl_not_enough = ERR_GCL_NOT_ENOUGH;
 
+exports.color_red = COLOR_RED;
+exports.color_purple = COLOR_PURPLE;
+exports.color_blue = COLOR_BLUE;
+exports.color_cyan = COLOR_CYAN;
+exports.color_green = COLOR_GREEN;
+exports.color_yellow = COLOR_YELLOW;
+exports.color_orange = COLOR_ORANGE;
+exports.color_brown = COLOR_BROWN;
+exports.color_grey = COLOR_GREY;
+exports.color_white = COLOR_WHITE;
+
+exports.event_attack = EVENT_ATTACK;
+exports.event_object_destroyed = EVENT_OBJECT_DESTROYED;
+exports.event_attack_controller = EVENT_ATTACK_CONTROLLER;
+exports.event_build = EVENT_BUILD;
+exports.event_harvest = EVENT_HARVEST;
+exports.event_heal = EVENT_HEAL;
+exports.event_repair = EVENT_REPAIR;
+exports.event_reserve_controller = EVENT_RESERVE_CONTROLLER
+exports.event_upgrade_controller = EVENT_UPGRADE_CONTROLLER
+exports.event_exit = EVENT_EXIT
+exports.event_power = EVENT_POWER
+exports.event_transfer = EVENT_TRANSFER;
+exports.event_attack_type_melee = EVENT_ATTACK_TYPE_MELEE
+exports.event_attack_type_ranged = EVENT_ATTACK_TYPE_RANGED
+exports.event_attack_type_ranged_mass = EVENT_ATTACK_TYPE_RANGED_MASS
+exports.event_attack_type_dismantle = EVENT_ATTACK_TYPE_DISMANTLE
+exports.event_attack_type_hit_back = EVENT_ATTACK_TYPE_HIT_BACK
+exports.event_attack_type_nuke = EVENT_ATTACK_TYPE_NUKE
+exports.event_heal_type_melee = EVENT_HEAL_TYPE_MELEE
+exports.event_heal_type_ranged = EVENT_HEAL_TYPE_RANGED
+
 exports.find_exit_top = FIND_EXIT_TOP;
 exports.find_exit_right = FIND_EXIT_RIGHT;
 exports.find_exit_bottom = FIND_EXIT_BOTTOM;
@@ -115,3 +147,15 @@ exports.resource_catalyzed_zynthium_acid = RESOURCE_CATALYZED_ZYNTHIUM_ACID;
 exports.resource_catalyzed_zynthium_alkalide = RESOURCE_CATALYZED_ZYNTHIUM_ALKALIDE;
 exports.resource_catalyzed_ghodium_acid = RESOURCE_CATALYZED_GHODIUM_ACID;
 exports.resource_catalyzed_ghodium_alkalide = RESOURCE_CATALYZED_GHODIUM_ALKALIDE;
+
+exports.resource_mist = RESOURCE_MIST
+exports.resource_biomass = RESOURCE_BIOMASS
+exports.resource_metal = RESOURCE_METAL
+exports.resource_silicon = RESOURCE_SILICON
+
+exports.density_low = DENSITY_LOW
+exports.density_moderate = DENSITY_MODERATE
+exports.density_high = DENSITY_HIGH
+exports.density_ultra = DENSITY_ULTRA
+
+exports.power_class = POWER_CLASS

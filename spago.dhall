@@ -19,6 +19,8 @@ to generate this file without the comments in this block.
   , "either"
   , "functions"
   , "maybe"
+  , "ordered-collections"
+  , "partial"
   , "prelude"
   , "strings"
   ]
