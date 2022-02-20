@@ -30,6 +30,13 @@ exports.unsafeDeleteFieldEff = function(key){
       }
   }
 }
+exports.unsafeDeleteFieldKeyEff = function(o,key){
+  return function(obj){
+      return function(){
+        delete obj[o][key];
+      }
+  }
+}
 exports.runThisEffFn0 = function(key){
     return function(self){
         return function(){

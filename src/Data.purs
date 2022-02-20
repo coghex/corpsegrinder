@@ -8,12 +8,14 @@ import Data.Either ( note )
 import Data.Maybe ( Maybe(..) )
 
 data    LoopStatus = LoopGo
+                   | LoopStart
                    | LoopReset
                    | LoopError String
                    | LoopNULL
 
 instance encodeLoopStatus ∷ EncodeJson LoopStatus where
   encodeJson LoopGo          = encodeJson   "loopGo"
+  encodeJson LoopStart       = encodeJson   "loopStart"
   encodeJson LoopReset       = encodeJson   "loopReset"
   encodeJson (LoopError err) = encodeJson $ "loopError:" <> err
   encodeJson LoopNULL        = encodeJson   "loopNULL"
@@ -23,6 +25,7 @@ instance decodeLoopStatus ∷ DecodeJson LoopStatus where
     note (TypeMismatch "LoopStatus:") (lsFromStr string)
 lsFromStr ∷ String → Maybe LoopStatus
 lsFromStr "loopGo"    = Just LoopGo
+lsFromStr "loopStart" = Just LoopStart
 lsFromStr "loopReset" = Just LoopReset
 lsFromStr "loopNULL"  = Just LoopNULL
 lsFromStr str         = if (length str) > 9 then
@@ -32,6 +35,7 @@ lsFromStr str         = if (length str) > 9 then
   else Nothing
 instance showLoopStatus ∷ Show LoopStatus where
   show LoopGo          = "loopGo"
+  show LoopStart       = "loopStart"
   show LoopReset       = "loopReset"
   show (LoopError err) = "loopError:" <> err
   show LoopNULL        = "loopNULL"

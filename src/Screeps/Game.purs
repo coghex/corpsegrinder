@@ -4,21 +4,22 @@ import UPrelude
 import Effect (Effect)
 import Data.Maybe (Maybe)
 import Data.Map as M
+import Foreign.Object as F
 import Screeps.Data
 import Screeps.FFI
 
 foreign import getGameGlobal   ∷ Effect GameGlobal
 
-constructionSites ∷ GameGlobal → M.Map String ConstructionSite
+constructionSites ∷ GameGlobal → F.Object ConstructionSite
 constructionSites = unsafeField "constructionSites"
 
 cpu ∷ GameGlobal → Cpu
 cpu = unsafeField "cpu"
 
-creeps ∷ GameGlobal → M.Map String Creep
+creeps ∷ GameGlobal → F.Object Creep
 creeps = unsafeField "creeps"
 
-flags ∷ GameGlobal → M.Map String Flag
+flags ∷ GameGlobal → F.Object Flag
 flags = unsafeField "flags"
 
 gcl ∷ GameGlobal → Gcl
@@ -33,19 +34,19 @@ map = unsafeField "map"
 market ∷ GameGlobal → Market
 market = unsafeField "market"
 
-powerCreeps ∷ GameGlobal → M.Map String PowerCreep
+powerCreeps ∷ GameGlobal → F.Object PowerCreep
 powerCreeps = unsafeField "powerCreeps"
 
 resources ∷ GameGlobal → M.Map ResourceType Int
 resources = unsafeField "resources"
 
-rooms ∷ GameGlobal → M.Map String Room
+rooms ∷ GameGlobal → F.Object Room
 rooms = unsafeField "rooms"
 
 shard ∷ GameGlobal → Shard
 shard = unsafeField "shard"
 
-spawns ∷ GameGlobal → M.Map String Spawn
+spawns ∷ GameGlobal → F.Object Spawn
 spawns = unsafeField "spawns"
 
 structures ∷ ∀ α. GameGlobal → M.Map (Id (Structure α)) (Structure α)
@@ -63,7 +64,7 @@ getUsed game = runThisEffFn0 "getUsed" (cpu game)
 halt ∷ GameGlobal → Effect Unit
 halt game = runThisEffFn0 "halt" (cpu game)
 
-setShardLimits ∷ GameGlobal → M.Map String Int → Effect ReturnCode
+setShardLimits ∷ GameGlobal → F.Object Int → Effect ReturnCode
 setShardLimits game = runThisEffFn1 "setShardLimits" (cpu game)
 
 unlock ∷ GameGlobal → Effect ReturnCode

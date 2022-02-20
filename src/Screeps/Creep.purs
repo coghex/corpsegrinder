@@ -8,9 +8,10 @@ import Screeps.FFI
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, JsonDecodeError)
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 
-foreign import unsafeGetAllCreepEff :: ∀ val. String → Effect val
-foreign import unsafeGetCreepEff :: ∀ val. String → String → Effect val
-foreign import unsafeSetCreepEff :: ∀ val. String → String → val → Effect Unit
+foreign import unsafeGetAllCreepEff ∷ ∀ val. String → Effect val
+foreign import unsafeGetCreepEff ∷ ∀ val. String → String → Effect val
+foreign import unsafeSetCreepEff ∷ ∀ val. String → String → val → Effect Unit
+foreign import unsafeDeleteCreepEff ∷ ∀ val. String → val → Effect Unit
 
 body ∷ Creep → Array BodyPart
 body = unsafeField "body"

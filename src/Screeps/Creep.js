@@ -15,3 +15,11 @@ exports.unsafeSetCreepEff = function(creep,key){
         return Memory.creeps[creep][key] = val;
     }
 }
+
+exports.unsafeDeleteCreepEff = function(key){
+    return function(obj){
+        return function(){
+            delete obj.creeps[key];
+        }
+    }
+}

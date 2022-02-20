@@ -18,6 +18,10 @@ exports.err_not_enough_extensions = ERR_NOT_ENOUGH_EXTENSIONS;
 exports.err_rcl_not_enough = ERR_RCL_NOT_ENOUGH;
 exports.err_gcl_not_enough = ERR_GCL_NOT_ENOUGH;
 
+exports.pMove = MOVE;
+exports.pWork = WORK;
+exports.pCarry = CARRY;
+
 exports.color_red = COLOR_RED;
 exports.color_purple = COLOR_PURPLE;
 exports.color_blue = COLOR_BLUE;
@@ -94,10 +98,6 @@ exports.structure_lab = STRUCTURE_LAB;
 exports.structure_terminal = STRUCTURE_TERMINAL;
 exports.structure_container = STRUCTURE_CONTAINER;
 exports.structure_nuker = STRUCTURE_NUKER;
-
-exports.pMove = MOVE;
-exports.pWork = WORK;
-exports.pCarry = CARRY;
 
 exports.resource_energy = RESOURCE_ENERGY;
 exports.resource_power = RESOURCE_POWER;

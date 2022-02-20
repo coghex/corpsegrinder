@@ -13,10 +13,13 @@ to generate this file without the comments in this block.
 { name = "my-project"
 , dependencies =
   [ "argonaut-codecs"
+  , "argonaut-core"
   , "argonaut-generic"
+  , "arrays"
   , "console"
   , "effect"
   , "either"
+  , "foreign-object"
   , "functions"
   , "maybe"
   , "ordered-collections"

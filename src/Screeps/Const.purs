@@ -21,6 +21,10 @@ foreign import err_not_enough_extensions ∷ ReturnCode
 foreign import err_rcl_not_enough        ∷ ReturnCode
 foreign import err_gcl_not_enough        ∷ ReturnCode
 
+foreign import pMove  ∷ BodyPartType
+foreign import pWork  ∷ BodyPartType
+foreign import pCarry ∷ BodyPartType
+
 foreign import color_red    ∷ Color
 foreign import color_purple ∷ Color
 foreign import color_blue   ∷ Color
@@ -52,10 +56,6 @@ foreign import event_attack_type_hit_back    ∷ Event
 foreign import event_attack_type_nuke        ∷ Event
 foreign import event_heal_type_melee         ∷ Event
 foreign import event_heal_type_ranged        ∷ Event
-
-foreign import pMove  ∷ BodyPartType
-foreign import pWork  ∷ BodyPartType
-foreign import pCarry ∷ BodyPartType
 
 foreign import find_exit_top                   ∷ FindType RoomPosition
 foreign import find_exit_right                 ∷ FindType RoomPosition

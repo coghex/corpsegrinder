@@ -118,6 +118,10 @@ newtype BodyPartType = BodyPartType String
 derive instance genericBodyPartType ∷ Generic BodyPartType _
 instance eqBodyPartType             ∷ Eq      BodyPartType where eq   = genericEq
 instance showBodyPartType           ∷ Show    BodyPartType where show = genericShow
+type CreepInfo =
+  { name ∷ String
+  , needTime ∷ Int
+  , remainingTime ∷ Int }
 
 -- power creep
 foreign import data RawPowerCreep ∷ Type
