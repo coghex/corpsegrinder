@@ -13,6 +13,8 @@ import Screeps.Game as Game
 import Screeps.Creep as Creep
 import Screeps.Data
 import Manager (manageCreeps)
+import Processor (processCreeps)
+import Preformer (preformCreeps)
 import Data
 import Foreign.Object as F
 
@@ -33,15 +35,20 @@ runCorpsegrinder LoopStart       memory = do
   Memory.set memory "loopStatus" LoopGo
   Memory.set memory "utility"    0
   game ← Game.getGameGlobal
-  let creeps = Game.creeps game
   --initSpawn1 creeps game memory
-  manageCreeps creeps game memory
+  manageCreeps game memory
 runCorpsegrinder LoopGo          memory = do
   game ← Game.getGameGlobal
   let time = Game.time game
-  if (time `mod` 12) ≡ 0 then do
-    freeCreepMemory game memory
-  else pure unit
+      modT = time `mod` 12
+  -- the following functions will get called once every 12 ticks
+  case modT of
+    0 → freeCreepMemory game memory
+    3 → manageCreeps game memory
+    6 → processCreeps game memory
+    -- 9 → ???
+    _ → pure unit
+  preformCreeps game memory
 runCorpsegrinder LoopReset       _      = do
   log $ "resetting the corpsegrinder..."
   -- TODO: reset the memory here

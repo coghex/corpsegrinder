@@ -14,9 +14,11 @@ import Screeps.Store as Store
 import Screeps.Const (resource_energy, pWork, pMove, pCarry)
 import Data
 
-manageCreeps ∷ F.Object Creep → GameGlobal → MemoryGlobal → Effect Unit
-manageCreeps creeps game memory = do
+-- | creeps are created here
+manageCreeps ∷ GameGlobal → MemoryGlobal → Effect Unit
+manageCreeps game memory = do
   let spawnslist      = Game.spawns game
+      creeps          = Game.creeps game
       spawn1          = F.lookup "Spawn1" spawnslist
   case spawn1 of
     -- there is no spawn yet, so just repeat this check here

@@ -2,6 +2,7 @@ module Screeps.Structure where
 
 import UPrelude
 import Effect (Effect)
+import Data.Maybe (Maybe(..))
 import Screeps.Data
 import Screeps.FFI
 
@@ -25,3 +26,5 @@ isActive = runThisEffFn0 "isActive"
 
 notifyWhenAttacked ∷ ∀ α. Structure α → Boolean → Effect ReturnCode
 notifyWhenAttacked = runThisEffFn1 "notifyWhenAttacked"
+
+

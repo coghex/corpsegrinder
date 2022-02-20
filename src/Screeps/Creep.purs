@@ -141,10 +141,10 @@ say = runThisEffFn1 "say"
 -- 
 -- suicide ∷ Creep → Effect ReturnCode
 -- suicide = runThisEffFn0 "suicide"
--- 
--- transfer ∷ Creep → RoomObject α → ResourceType → Effect ReturnCode
--- transfer = runThisEffFn2 "transfer"
--- 
+ 
+transfer ∷ ∀ α. Creep → RoomObject α → ResourceType → Effect ReturnCode
+transfer = runThisEffFn2 "transfer"
+ 
 -- transfer' ∷ Creep → RoomObject α → ResourceType → Int → Effect ReturnCode
 -- transfer' = runThisEffFn3 "transfer"
 -- 

@@ -21,11 +21,13 @@ to generate this file without the comments in this block.
   , "either"
   , "foreign-object"
   , "functions"
+  , "integers"
   , "maybe"
   , "ordered-collections"
   , "partial"
   , "prelude"
   , "strings"
+  , "tuples"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

@@ -1,6 +1,7 @@
 module Screeps.RoomObject where
 
 import UPrelude
+import Data.Maybe (Maybe)
 import Screeps.Data
 import Screeps.FFI
 
@@ -9,3 +10,6 @@ pos = unsafeField "pos"
 
 room ∷ ∀ α. RoomObject α → Room
 room = unsafeField "room"
+
+storeMaybe ∷ ∀ α. RoomObject α → Maybe Store
+storeMaybe struct = toMaybe $ unsafeField "store" struct
