@@ -18,6 +18,7 @@ import Screeps.Store as Store
 import Screeps.Const (resource_energy, pWork, pMove, pCarry)
 import Data
 import Role.Harvester (preformHarvester)
+import Role.Builder (preformBuilder)
 
 -- | creeps change their roles here
 preformCreeps ∷ GameGlobal → MemoryGlobal → Effect Unit
@@ -44,7 +45,11 @@ preformCreep _    (Tuple "NULL" val) = pure unit
 preformCreep game (Tuple key    val) = case role of
   RoleNULL → pure unit
   RoleIdle → pure unit
-  RoleBuilder → pure unit
+  RoleBuilder → do
+    let creep = F.lookup key (Game.creeps game)
+    case creep of
+      Nothing → pure unit
+      Just c0 → preformBuilder c0
   RoleHarvester → do
     let creep = F.lookup key (Game.creeps game)
     case creep of

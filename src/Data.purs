@@ -40,7 +40,21 @@ instance showLoopStatus ∷ Show LoopStatus where
   show (LoopError err) = "loopError:" <> err
   show LoopNULL        = "loopNULL"
 
-data CreepType = CreepDrone | CreepNULL
+data CreepType = CreepPeon | CreepGrunt | CreepNULL
+instance encodeCreepType ∷ EncodeJson CreepType where
+  encodeJson CreepPeon  = encodeJson "creepPeon"
+  encodeJson CreepGrunt = encodeJson "creepGrunt"
+  encodeJson CreepNULL  = encodeJson "creepNULL"
+instance decodeCreepType ∷ DecodeJson CreepType where
+  decodeJson json = do
+    string ← decodeJson json
+    note (TypeMismatch "DecodeJson:") (ctFromStr string)
+ctFromStr ∷ String → Maybe CreepType
+ctFromStr "creepPeon"  = Just CreepPeon
+ctFromStr "creepGrunt" = Just CreepGrunt
+ctFromStr "creepNULL"  = Just CreepNULL
+ctFromStr _            = Nothing
+
 data Role      = RoleIdle
                | RoleBuilder
                | RoleHarvester

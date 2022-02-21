@@ -7,7 +7,7 @@ import Data.Int ( quot )
 import Data.Array (index, uncons, filter)
 import Data.Argonaut.Core ( Json )
 import Data.Argonaut.Encode ( encodeJson )
-import Data.Argonaut.Decode ( decodeJson )
+import Data.Argonaut.Decode ( decodeJson, getField )
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Screeps.Data
@@ -27,13 +27,11 @@ processCreeps game memory = do
                  Left err → F.empty
                  Right c0 → c0
       utl0 = F.fold addUpUtils 0 creeps
-      newCreeps = F.mapWithKey (processCreep utl0 roleScores roleList) creeps
-      roleScores = map (calcRoleScore creeps) roleList
+      newCreeps = F.mapWithKey (processCreep utl0 roleList creeps) creeps
   Memory.set memory "creeps"  newCreeps
   Memory.set memory "utility" utl0
-processCreep ∷ Int → Array Int → Array Role → String
-  → F.Object Json → F.Object Json
-processCreep utl0 scores roles key creep0 = creep2
+processCreep ∷ Int → Array Role → F.Object (F.Object Json) → String → F.Object Json → F.Object Json
+processCreep utl0 roles creeps key creep0 = creep2
   where creep2  = F.update (\_ → newUtl)  "utility" creep1
         creep1  = F.update (\_ → newRole) "role"    creep0
         newUtl  = fromMaybeToMaybeJson newUtl'
@@ -41,6 +39,10 @@ processCreep utl0 scores roles key creep0 = creep2
         ind     = findInd roles alt 0
         alt     = bestRole scores roles 0 RoleNULL
         newRole = Just $ encodeJson alt
+        scores  = map (calcRoleScore creeps role0) roleList
+        role0   = case getField creep0 "role" of
+                    Left _   → RoleNULL
+                    Right r0 → r0
 
 bestRole ∷ Array Int → Array Role → Int → Role → Role
 bestRole []     _     _     role = role
@@ -61,21 +63,31 @@ bestRole scores roles score role = if (score' > score) then bestRole scores' rol
                      Nothing → 0
 
 -- | finds the score for a given role for all the creeps at once
-calcRoleScore ∷ F.Object (F.Object Json) → Role → Int
-calcRoleScore creeps RoleNULL      = 0
-calcRoleScore creeps RoleIdle      = 1
-calcRoleScore creeps RoleBuilder   = score
+calcRoleScore ∷ F.Object (F.Object Json) → Role → Role → Int
+calcRoleScore creeps _     RoleNULL      = 0
+calcRoleScore creeps _     RoleIdle      = 1
+calcRoleScore creeps role0 RoleBuilder   = score
   where score    = 800 `quot` (builders + 1)
-        builders = numberOfRole RoleBuilder creeps
-calcRoleScore creeps RoleHarvester = score
-  where score = 1000 `quot` (harvs + 1)
-        harvs = numberOfRole RoleHarvester creeps
+        builders = iDoThat + numberOfRole RoleBuilder creeps
+        iDoThat  = case role0 of
+                     RoleBuilder → -1
+                     _           → 0
+calcRoleScore creeps role0 RoleHarvester = score
+  where score   = 1000 `quot` ((10*harvs) + 1)
+        harvs   = iDoThat + numberOfRole RoleHarvester creeps
+        iDoThat = case role0 of
+                    RoleHarvester → -1
+                    _             → 0
 
 numberOfRole ∷ Role → F.Object (F.Object Json) → Int
-numberOfRole role creeps = F.size $ F.filter roleFilter creeps
+numberOfRole role creeps = F.size $ F.filter (roleFilter role) creeps
 
-roleFilter ∷ F.Object Json → Boolean
-roleFilter creep = false
+roleFilter ∷ Role → F.Object Json → Boolean
+roleFilter role creep = case (F.lookup "role" creep) of
+  Nothing → false
+  Just r0 → case decodeJson r0 of
+    Left  _  → false
+    Right r0 → r0 ≡ role
 
 -- | we need to always return something or foreign.update will delete things
 fromMaybeToMaybeJson ∷ Maybe Int → Maybe Json
@@ -98,5 +110,5 @@ addUpUtils ∷ Int → String → F.Object Json → Int
 addUpUtils n key val = case (F.lookup "utility" val) of
   Nothing → n
   Just v0 → case (decodeJson v0) of
-    Left err → n
+    Left  _  → n
     Right n0 → n + n0

@@ -23,6 +23,17 @@ exports.unsafeSetFieldEff = function(key){
         }
     }
 }
+exports.unsafeSetFieldKeyEff = function(key){
+    return function(obj){
+        return function(o){
+            return function(val){
+                return function(){
+                    obj[o][key] = val;
+                }
+            }
+        }
+    }
+}
 exports.unsafeDeleteFieldEff = function(key){
   return function(obj){
       return function(){

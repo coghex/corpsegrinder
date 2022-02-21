@@ -8,6 +8,7 @@ import Partial.Unsafe (unsafePartial)
 foreign import unsafeField ∷ ∀ obj val. String → obj → val
 foreign import unsafeGetFieldEff ∷ ∀ obj val. String → obj → Effect val
 foreign import unsafeSetFieldEff ∷ ∀ obj val. String → obj → val → Effect Unit
+foreign import unsafeSetFieldKeyEff ∷ ∀ obj val. String → obj → String → val → Effect Unit
 foreign import unsafeDeleteFieldEff ∷ ∀ obj. String → obj → Effect Unit
 foreign import unsafeDeleteFieldKeyEff ∷ ∀ obj. String → String → obj → Effect Unit
 foreign import runThisEffFn0 ∷ ∀ this α. String → this → Effect α
