@@ -10,7 +10,9 @@ import Screeps.FFI
 constructor ∷ String → Effect RoomTerrain
 constructor = runThisEffFn0 "constructor"
 
-get ∷ RoomTerrain → Int → Int → Maybe TerrainMask
+-- figure out why this doesnt return terrain mask
+--get ∷ RoomTerrain → Int → Int → Maybe TerrainMask
+get ∷ RoomTerrain → Int → Int → Maybe Int
 get rt x y = toMaybe $ runThisFn2 "get" rt x y
 
 -- TODO: getRawBuffer

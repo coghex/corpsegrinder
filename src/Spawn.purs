@@ -2,6 +2,7 @@ module Spawn where
 
 import UPrelude
 import Effect (Effect)
+import Effect.Console (log)
 import Data.Maybe (Maybe(..))
 import Data.Array (uncons, length, filter)
 import Screeps.Data
@@ -43,7 +44,7 @@ findHarvestSpots room source
   = HarvestSpot { sourceName: sname
                 , nHarvs:     0
                 , nMaxHarvs:  nmax
-                , harvSpots: spots1 }
+                , harvSpots:  spots1 }
   where sname   = Source.id source
         nmax    = length spots1
         terrain = Room.getTerrain room
@@ -53,7 +54,7 @@ findHarvestSpots room source
         sPos    = RO.pos source
         x       = RP.x sPos
         y       = RP.y sPos
-        spotN   = unMaybeSpot terrain x (y + 1)
+        spotN   = unMaybeSpot terrain x       (y + 1)
         spotS   = unMaybeSpot terrain x       (y - 1)
         spotE   = unMaybeSpot terrain (x + 1) y
         spotW   = unMaybeSpot terrain (x - 1) y
@@ -67,15 +68,18 @@ unMaybeSpot rt x y = case (RT.get rt x y) of
                   , spotX:    x
                   , spotY:    y}]
   Just s0 → tType s0
-  where tType terrain_mask_wall  = [Spot { spotType: SpotWall
-                                         , spotX:    x
-                                         , spotY:    y}]
-        tType terrain_mask_swamp = [Spot { spotType: SpotSwamp
-                                         , spotX:    x
-                                         , spotY:    y}]
-        tType terrain_mask_lava  = [Spot { spotType: SpotLava
-                                         , spotX:    x
-                                         , spotY:    y}]
+  where tType 0 = [Spot { spotType: SpotPlain
+                        , spotX: x
+                        , spotY: y }]
+        tType 1 = [Spot { spotType: SpotWall
+                        , spotX:    x
+                        , spotY:    y}]
+        tType 2 = [Spot { spotType: SpotSwamp
+                        , spotX:    x
+                        , spotY:    y}]
+        tType _ = [Spot { spotType: SpotLava
+                        , spotX:    x
+                        , spotY:    y}]
 
 walkable ∷ Spot → Boolean
 walkable (Spot {spotType: SpotPlain, spotX: _, spotY: _}) = true
