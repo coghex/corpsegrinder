@@ -22,6 +22,10 @@ exports.pMove = MOVE;
 exports.pWork = WORK;
 exports.pCarry = CARRY;
 
+exports.terrain_mask_wall = TERRAIN_MASK_WALL;
+exports.terrain_mask_swamp = TERRAIN_MASK_SWAMP;
+exports.terrain_mask_lava = TERRAIN_MASK_LAVA;
+
 exports.color_red = COLOR_RED;
 exports.color_purple = COLOR_PURPLE;
 exports.color_blue = COLOR_BLUE;

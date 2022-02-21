@@ -25,6 +25,10 @@ foreign import pMove  ∷ BodyPartType
 foreign import pWork  ∷ BodyPartType
 foreign import pCarry ∷ BodyPartType
 
+foreign import terrain_mask_wall ∷ TerrainMask
+foreign import terrain_mask_swamp ∷ TerrainMask
+foreign import terrain_mask_lava ∷ TerrainMask
+
 foreign import color_red    ∷ Color
 foreign import color_purple ∷ Color
 foreign import color_blue   ∷ Color

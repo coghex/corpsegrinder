@@ -1,11 +1,14 @@
 module Data where
 
 import UPrelude
-import Data.Argonaut.Decode (class DecodeJson, decodeJson, JsonDecodeError(..))
-import Data.Argonaut.Encode (class EncodeJson, encodeJson)
+import Data.Argonaut.Core (jsonEmptyObject)
+import Data.Argonaut.Decode (class DecodeJson, decodeJson
+                            , JsonDecodeError(..), (.:))
+import Data.Argonaut.Encode (class EncodeJson, encodeJson, (:=), (~>))
 import Data.String ( length, take, drop )
 import Data.Either ( note )
 import Data.Maybe ( Maybe(..) )
+import Screeps.Data
 
 data    LoopStatus = LoopGo
                    | LoopStart
@@ -48,7 +51,7 @@ instance encodeCreepType ∷ EncodeJson CreepType where
 instance decodeCreepType ∷ DecodeJson CreepType where
   decodeJson json = do
     string ← decodeJson json
-    note (TypeMismatch "DecodeJson:") (ctFromStr string)
+    note (TypeMismatch "DecodeJson") (ctFromStr string)
 ctFromStr ∷ String → Maybe CreepType
 ctFromStr "creepPeon"  = Just CreepPeon
 ctFromStr "creepGrunt" = Just CreepGrunt
@@ -81,7 +84,7 @@ instance encodeRole ∷ EncodeJson Role where
 instance decodeRole ∷ DecodeJson Role where
   decodeJson json = do
     string ← decodeJson json
-    note (TypeMismatch "Role:") (roleFromStr string)
+    note (TypeMismatch "Role") (roleFromStr string)
 roleFromStr ∷ String → Maybe Role
 roleFromStr "RoleHarvester" = Just RoleHarvester
 roleFromStr "RoleBuilder"   = Just RoleBuilder
@@ -89,4 +92,57 @@ roleFromStr "RoleIdle"      = Just RoleIdle
 roleFromStr "RoleNULL"      = Just RoleNULL
 roleFromStr _               = Nothing
 roleList = [RoleIdle, RoleHarvester, RoleBuilder, RoleNULL] ∷ Array Role
+
+data HarvestSpot = HarvestSpot { sourceName ∷ Id Source
+                               , nHarvs     ∷ Int
+                               , nMaxHarvs  ∷ Int
+                               , harvSpots  ∷ Array Spot }
+instance encodeHarvestSpot ∷ EncodeJson HarvestSpot where
+  encodeJson (HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots }) =
+    "sourceName"     := sourceName
+      ~> "nHarvs"    := nHarvs
+      ~> "nMaxHarvs" := nMaxHarvs
+      ~> "harvSpots" := harvSpots
+      ~> jsonEmptyObject
+instance decodeHarvestSpot ∷ DecodeJson HarvestSpot where
+  decodeJson json = do
+    obj ← decodeJson json
+    sourceName ← obj .: "sourceName"
+    nHarvs     ← obj .: "nHarvs"
+    nMaxHarvs  ← obj .: "nMaxHarvs"
+    harvSpots  ← obj .: "harvSpots"
+    pure $ HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots }
+data Spot = Spot { spotType ∷ SpotType
+                 , spotX    ∷ Int
+                 , spotY    ∷ Int }
+instance encodeSpot ∷ EncodeJson Spot where
+  encodeJson (Spot {spotType, spotX, spotY})  =
+    "spotType"      := spotType
+      ~> "spotX"    := spotX
+      ~> "spotY"    := spotY
+      ~> jsonEmptyObject
+instance decodeJson ∷ DecodeJson Spot where
+  decodeJson json = do
+    obj ← decodeJson json
+    spotType ← obj .: "spotType"
+    spotX    ← obj .: "spotX"
+    spotY    ← obj .: "spotY"
+    pure $ Spot { spotType, spotX, spotY }
+
+data SpotType = SpotPlain | SpotWall | SpotSwamp | SpotLava
+instance encodeSpotType ∷ EncodeJson SpotType where
+  encodeJson SpotPlain = encodeJson "spotPlain"
+  encodeJson SpotWall  = encodeJson "spotWall"
+  encodeJson SpotSwamp = encodeJson "spotSwamp"
+  encodeJson SpotLava  = encodeJson "spotLava"
+instance decodeSpotType ∷ DecodeJson SpotType where
+  decodeJson json = do
+    string ← decodeJson json
+    note (TypeMismatch "Role") (spotTypeFromStr string)
+spotTypeFromStr ∷ String → Maybe SpotType
+spotTypeFromStr "spotPlain" = Just SpotPlain
+spotTypeFromStr "spotWall"  = Just SpotWall
+spotTypeFromStr "spotSwamp" = Just SpotSwamp
+spotTypeFromStr "spotLava"  = Just SpotLava
+spotTypeFromStr _           = Nothing
 

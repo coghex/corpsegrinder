@@ -15,6 +15,7 @@ import Screeps.Data
 import Manager (manageCreeps)
 import Processor (processCreeps)
 import Preformer (preformCreeps)
+import Spawn (initSpawn)
 import Data
 import Foreign.Object as F
 
@@ -35,7 +36,7 @@ runCorpsegrinder LoopStart       memory = do
   Memory.set memory "loopStatus" LoopGo
   Memory.set memory "utility"    0
   game ← Game.getGameGlobal
-  --initSpawn1 creeps game memory
+  initSpawn game
   manageCreeps game memory
 runCorpsegrinder LoopGo          memory = do
   game ← Game.getGameGlobal

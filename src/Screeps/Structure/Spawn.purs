@@ -19,6 +19,10 @@ foreign import createCreepPrimeImpl ∷ ∀ mem. Spawn → Array BodyPartType
 memory ∷ ∀ α. Spawn → { | α }
 memory = unsafeField "memory"
 
+setMemory ∷ ∀ α. (EncodeJson α) ⇒ Spawn → String → α → Effect Unit
+setMemory spawn key val = unsafeSetFieldEff key spawnMemory $ encodeJson val
+  where spawnMemory = unsafeField "memory" spawn
+
 name ∷ Spawn → String
 name = unsafeField "name"
 

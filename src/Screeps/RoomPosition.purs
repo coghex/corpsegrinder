@@ -1,4 +1,4 @@
-module RoomPosition where
+module Screeps.RoomPosition where
 
 import UPrelude
 import Effect (Effect)
