@@ -7,6 +7,7 @@ import Data.Maybe (Maybe(..))
 import Screeps.Data
 import Screeps.FFI
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
+import Data.Argonaut.Decode (class DecodeJson, decodeJson, JsonDecodeError)
 
 foreign import createCreepImpl ∷ Spawn → Array BodyPartType
   → (ReturnCode → Either ReturnCode String)
@@ -21,6 +22,10 @@ memory = unsafeField "memory"
 
 setMemory ∷ ∀ α. (EncodeJson α) ⇒ Spawn → String → α → Effect Unit
 setMemory spawn key val = unsafeSetFieldEff key spawnMemory $ encodeJson val
+  where spawnMemory = unsafeField "memory" spawn
+
+getMemory ∷ ∀ α. (DecodeJson α) ⇒ Spawn → String → Effect (Either JsonDecodeError α)
+getMemory spawn key = decodeJson <$> unsafeGetFieldEff key spawnMemory
   where spawnMemory = unsafeField "memory" spawn
 
 name ∷ Spawn → String

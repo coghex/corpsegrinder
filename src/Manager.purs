@@ -3,6 +3,7 @@ module Manager where
 import UPrelude
 import Effect (Effect)
 import Effect.Console (log)
+import Data.Array (foldr)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Screeps.Data
@@ -29,7 +30,8 @@ manageCreeps game memory = do
     Nothing → Memory.set memory "loopStatus" LoopStart
     Just s1 → case rcl of
       1 → do
-        if availableEnergy > 250 && numCreeps < 3 then do
+        nMaxCreeps ← calcMaxCreeps 1 s1
+        if availableEnergy > 250 && numCreeps < nMaxCreeps then do
                     log "creating level 1 creep..."
                     createCreep s1 1
                   else pure unit
@@ -41,6 +43,17 @@ manageCreeps game memory = do
             controller1     = Room.controller        room1
             rcl             = Controller.level       controller1
 
+-- | finds the maximum number of creeps at different levels
+calcMaxCreeps ∷ Int → Spawn → Effect Int
+calcMaxCreeps 1 spawn = do
+  ret ← Spawn.getMemory spawn "harvestSpots"
+  case ret of
+    Left  _  → pure 0
+    Right h0 → pure $ foldr (addHarvestSpots) 0 h0
+calcMaxCreeps _ _     = pure 0
+addHarvestSpots ∷ HarvestSpot → Int → Int
+addHarvestSpots (HarvestSpot {sourceName, nHarvs, nMaxHarvs, harvSpots}) n
+  = n + nMaxHarvs
 
 -- | basic creep creation function
 createCreep ∷ Spawn → Int → Effect Unit

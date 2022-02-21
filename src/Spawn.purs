@@ -51,9 +51,9 @@ findHarvestSpots room source
         spots1  = filter walkable spots0
         spots0  = spotN <> spotS <> spotE <> spotW
                     <> spotNW <> spotNE <> spotSW <> spotSE
-        sPos    = RO.pos source
-        x       = RP.x sPos
-        y       = RP.y sPos
+        sPos    = RO.pos      source
+        x       = RP.x        sPos
+        y       = RP.y        sPos
         spotN   = unMaybeSpot terrain x       (y + 1)
         spotS   = unMaybeSpot terrain x       (y - 1)
         spotE   = unMaybeSpot terrain (x + 1) y

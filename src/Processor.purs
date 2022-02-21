@@ -66,7 +66,7 @@ bestRole scores roles score role = if (score' > score) then bestRole scores' rol
 calcRoleScore ∷ F.Object (F.Object Json) → Role → Role → Int
 calcRoleScore creeps _     RoleNULL      = 0
 calcRoleScore creeps _     RoleIdle      = 1
-calcRoleScore creeps role0 RoleBuilder   = score
+calcRoleScore creeps role0 RoleBuilder   = 0 -- score
   where score    = 800 `quot` (builders + 1)
         builders = iDoThat + numberOfRole RoleBuilder creeps
         iDoThat  = case role0 of

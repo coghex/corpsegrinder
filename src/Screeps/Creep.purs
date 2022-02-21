@@ -34,9 +34,10 @@ getIdAsStr = unsafeField "id"
 memory ∷ ∀ α. (DecodeJson α) ⇒ Creep → Effect (Either JsonDecodeError α)
 memory creep = decodeJson <$> unsafeGetFieldEff "memory" creep
 
---getMemory ∷ ∀ α. (DecodeJson α) ⇒ Creep → String → Effect (Either JsonDecodeError α)
---getMemory = decodeJson <$> unsafeGetCreepEff
---
+getMemory ∷ ∀ α. (DecodeJson α) ⇒ Creep → String → Effect (Either JsonDecodeError α)
+getMemory creep key = decodeJson <$> unsafeGetFieldEff key creepMemory
+  where creepMemory = unsafeField "memory" creep
+
 setMemory ∷ ∀ α. (EncodeJson α) ⇒ Creep → String → α → Effect Unit
 setMemory creep key val = unsafeSetFieldEff key creepMemory $ encodeJson val
   where creepMemory = unsafeField "memory" creep
