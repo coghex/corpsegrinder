@@ -40,6 +40,11 @@ runCorpsegrinder LoopStart       memory = do
   manageCreeps game memory
 runCorpsegrinder LoopGo          memory = do
   game ← Game.getGameGlobal
+  -- TODO: figure out how to reset the game memory
+  -- check if there is a spawn, if not reset
+--   if (F.size (Game.spawns game)) < 1 
+--     then Memory.set memory "loopStatus" LoopReset
+--     else pure unit
   let time = Game.time game
       modT = time `mod` 12
   -- the following functions will get called once every 12 ticks
@@ -50,9 +55,14 @@ runCorpsegrinder LoopGo          memory = do
     -- 9 → ???
     _ → pure unit
   preformCreeps game memory
-runCorpsegrinder LoopReset       _      = do
+runCorpsegrinder LoopReset       memory = do
   log $ "resetting the corpsegrinder..."
-  -- TODO: reset the memory here
+  Memory.clear memory
+  Memory.set memory "loopStatus" LoopGo
+  Memory.set memory "utility"    0
+  game ← Game.getGameGlobal
+  initSpawn game
+  manageCreeps game memory
 runCorpsegrinder (LoopError str) _      = log $ "Error: " <> str
 runCorpsegrinder LoopNULL        _      = pure unit
 
@@ -60,7 +70,7 @@ freeCreepMemory ∷ GameGlobal → MemoryGlobal → Effect Unit
 freeCreepMemory game memory = do
   creeps' ← Memory.get memory "creeps"
   let creeps = case creeps'' of
-                 Left err → []
+                 Left  _  → []
                  Right c0 → F.keys c0
       creeps'' = creeps' ∷ Either JsonDecodeError (F.Object Json)
   freeCreepMemoryF game memory creeps

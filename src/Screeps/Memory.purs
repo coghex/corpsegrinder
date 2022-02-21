@@ -2,7 +2,8 @@ module Screeps.Memory where
 import UPrelude
 import Effect (Effect)
 import Screeps.FFI ( unsafeGetFieldEff, unsafeSetFieldEff
-                   , unsafeDeleteFieldEff, unsafeDeleteFieldKeyEff )
+                   , unsafeDeleteFieldEff, unsafeDeleteFieldKeyEff
+                   , unsafeClearEff )
 import Screeps.Creep ( unsafeDeleteCreepEff )
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, JsonDecodeError)
@@ -23,6 +24,8 @@ get memoryGlobal key
 free ∷ MemoryGlobal → String → Effect Unit
 free memoryGlobal key
   = unsafeDeleteFieldEff key memoryGlobal
+clear ∷ MemoryGlobal → Effect Unit
+clear = unsafeClearEff
 -- TODO: find out why this doesnt work
 freeField ∷ MemoryGlobal → String → String → Effect Unit
 freeField memoryGlobal obj key

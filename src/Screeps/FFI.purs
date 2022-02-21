@@ -11,6 +11,7 @@ foreign import unsafeSetFieldEff ∷ ∀ obj val. String → obj → val → Eff
 foreign import unsafeSetFieldKeyEff ∷ ∀ obj val. String → obj → String → val → Effect Unit
 foreign import unsafeDeleteFieldEff ∷ ∀ obj. String → obj → Effect Unit
 foreign import unsafeDeleteFieldKeyEff ∷ ∀ obj. String → String → obj → Effect Unit
+foreign import unsafeClearEff ∷ ∀ obj. obj → Effect Unit
 foreign import runThisEffFn0 ∷ ∀ this α. String → this → Effect α
 foreign import runThisEffFn1 ∷ ∀ this α β. String → this → α → Effect β
 foreign import runThisEffFn2 ∷ ∀ this α β γ. String → this → α → β → Effect γ

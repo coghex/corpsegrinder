@@ -48,6 +48,15 @@ exports.unsafeDeleteFieldKeyEff = function(o,key){
       }
   }
 }
+exports.unsafeClearEff = function() {
+    return function(obj){
+        return function() {
+            for (const key in obj) {
+                delete obj[key];
+            }
+        }
+    }
+}
 exports.runThisEffFn0 = function(key){
     return function(self){
         return function(){

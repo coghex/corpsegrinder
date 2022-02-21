@@ -121,7 +121,7 @@ findNearest arr pos0 = index arr ind
         x0     = RP.x   pos0
         y0     = RP.y   pos0
 findDistance ∷ ∀ α. Int → Int → RoomObject α → Int
-findDistance x0 y0 obj = distance x0 y0 x1 y1
+findDistance x0 y0 obj = distance x1 y1 x0 y0
   where pos1 = RO.pos obj
         x1   = RP.x   pos1
         y1   = RP.y   pos1
@@ -129,7 +129,7 @@ findDistance x0 y0 obj = distance x0 y0 x1 y1
 -- will only return a source if it has capacity
 findNearestOpenSource ∷ Array HarvestSpot → Array Source → RoomPosition → Maybe Source
 -- if there was an error in reading harvestspots, just throw them away
-findNearestOpenSource [] arr pos0 = findNearest arr pos0
+--findNearestOpenSource [] arr pos0 = findNearest arr pos0
 findNearestOpenSource harvData arr pos0 = index arr ind
   where ind    = foldr min 0 dists
         dists  = map (findSourceDistance x0 y0) (zip harvData arr)
