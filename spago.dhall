@@ -17,6 +17,7 @@ to generate this file without the comments in this block.
   , "argonaut-generic"
   , "arrays"
   , "console"
+  , "control"
   , "effect"
   , "either"
   , "foreign-object"
@@ -24,10 +25,12 @@ to generate this file without the comments in this block.
   , "integers"
   , "math"
   , "maybe"
+  , "newtype"
   , "ordered-collections"
   , "partial"
   , "prelude"
   , "strings"
+  , "transformers"
   , "tuples"
   ]
 , packages = ./packages.dhall

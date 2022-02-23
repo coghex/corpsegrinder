@@ -2,7 +2,9 @@ module Main where
 
 import UPrelude
 import Effect (Effect)
+import Effect.Class (liftEffect)
 import Effect.Console (log)
+import Control.Monad.Reader ( asks )
 import Data.Array (uncons)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
@@ -19,18 +21,24 @@ import Preformer (preformCreeps)
 import Builder (buildRoom)
 import Spawn (initSpawn)
 import Data
+import CG
 import Foreign.Object as F
 
 main ∷ Effect Unit
 main = do
-  memory     ← Memory.getMemoryGlobal
-  loopStatus ← Memory.get memory "loopStatus"
+  m ← Memory.getMemoryGlobal
+  g ← Game.getGameGlobal
+  runCG corpseGrinder { memory:m, game:g }
+corpseGrinder ∷ ∀ ε. CG ε Unit
+corpseGrinder = do
+  memory ← asks (_.memory)
+  loopStatus ← liftEffect $ Memory.get memory "loopStatus"
   let ls = loopStatus ∷ Either JsonDecodeError (Maybe LoopStatus)
   case ls of
-    Left err → log $ printJsonDecodeError err
+    Left err → liftEffect $ log $ printJsonDecodeError err
     Right status → case status of
-      Nothing  → Memory.set memory "loopStatus" LoopStart
-      Just ls0 → runCorpsegrinder ls0 memory
+      Nothing  → liftEffect $ Memory.set memory "loopStatus" LoopStart
+      Just ls0 → liftEffect $ runCorpsegrinder ls0 memory
 
 runCorpsegrinder ∷ LoopStatus → MemoryGlobal → Effect Unit
 runCorpsegrinder LoopStart       memory = do
