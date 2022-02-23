@@ -27,8 +27,8 @@ import Util (distance)
 import Data (HarvestSpot(..), Spot(..))
 
 -- | a harvester moves between energy source and extension, spawn, or tower
-preformHarvester ∷ Creep → Effect Unit
-preformHarvester creep = do
+preformHarvester ∷ GameGlobal → Creep → Effect Unit
+preformHarvester game creep = do
   let freeCapacity = case (RO.storeMaybe creep) of
                        Nothing → 0
                        Just s0 → Store.getFreeCapacity (Creep.store creep)
@@ -45,30 +45,28 @@ preformHarvester creep = do
                  case ret of
                    Left  _  → pure []
                    Right h0 → pure h0
-    case (findNearestOpenSource harvSs sources (RO.pos creep)) of
-      Nothing → pure unit
-      Just nearestSource → do
-        harv ← Creep.harvest creep nearestSource
-        dest ← Creep.getMemory creep "target"
-        case dest of
-          Left  _  → do
-                     Creep.setMemory creep "target" (Source.id nearestSource)
-                     case spawn of
-                       Nothing → pure unit
-                       Just s0 → setNHarvs harvSs (Source.id nearestSource) s0
-          Right d0 → if (d0 ≡ (Source.id nearestSource)) then pure unit
-                     else do
-                       Creep.setMemory creep "target" (Source.id nearestSource)
-                       case spawn of
-                         Nothing → pure unit
-                         Just s0 → do
-                           setNHarvs harvSs (Source.id nearestSource) s0
-                           removeNHarvs harvSs d0 s0
-
-        if harv == err_not_in_range then do
-          ret ← Creep.moveTo creep (TargetObj nearestSource)
-          pure unit
-    else pure unit
+    dest ← Creep.getMemory creep "target"
+    case dest of
+      Left  _  → do
+        case (findNearestOpenSource harvSs sources (RO.pos creep)) of
+          Nothing → pure unit
+          Just nearestSource → do
+                  Creep.setMemory creep "target" (Source.id nearestSource)
+                  case spawn of
+                    Nothing → pure unit
+                    Just s0 → setNHarvs harvSs (Source.id nearestSource) s0
+      Right d0 → do
+        let nearestSource' = Game.getObjectById game d0
+        case nearestSource' of
+          Nothing → log $ "creep " <> (Creep.name creep)
+                                   <> " has lost its destination: "
+                                   <> (show d0)
+          Just nearestSource → do
+            harv ← Creep.harvest creep nearestSource
+            if harv ≡ err_not_in_range then do
+              ret ← Creep.moveTo creep (TargetObj nearestSource)
+              pure unit
+            else pure unit
   else do
     let targets = find' (RO.room creep) find_structures hasFreeSpace
 --    log $ "num targets: " <> (show (length targets))
@@ -116,7 +114,7 @@ isStorable _         _                   = false
 
 findNearest ∷ ∀ α. Array (RoomObject α) → RoomPosition → Maybe (RoomObject α)
 findNearest arr pos0 = index arr ind
-  where ind    = foldr min 10000000 dists
+  where ind    = findMin dists
         dists  = map (findDistance x0 y0) arr
         x0     = RP.x   pos0
         y0     = RP.y   pos0

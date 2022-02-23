@@ -54,7 +54,7 @@ preformCreep game (Tuple key    val) = case role of
     let creep = F.lookup key (Game.creeps game)
     case creep of
       Nothing → pure unit
-      Just c0 → preformHarvester c0
+      Just c0 → preformHarvester game c0
   where role = case getField val "role" of
                  Left err → RoleNULL
                  Right r0 → r0
