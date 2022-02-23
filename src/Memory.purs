@@ -15,7 +15,7 @@ import Screeps.Game as Game
 import Screeps.Structure.Spawn as Spawn
 import Screeps.Memory as Memory
 import Data (CreepType, Role, HarvestSpot)
-import Role.Harvester ( removeNHarvs )
+import Util ( removeNHarvs )
 
 -- | called every once in a while to get rid of memory of dead creeps
 --   and set corresponding values in AI state to compensate

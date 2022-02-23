@@ -45,11 +45,11 @@ preformCreep _    (Tuple "NULL" val) = pure unit
 preformCreep game (Tuple key    val) = case role of
   RoleNULL → pure unit
   RoleIdle → pure unit
-  RoleBuilder → do
+  RoleBuilder _ → do
     let creep = F.lookup key (Game.creeps game)
     case creep of
       Nothing → pure unit
-      Just c0 → preformBuilder c0
+      Just c0 → preformBuilder game c0
   RoleHarvester → do
     let creep = F.lookup key (Game.creeps game)
     case creep of

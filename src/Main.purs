@@ -16,6 +16,7 @@ import Memory
 import Manager (manageCreeps)
 import Processor (processCreeps)
 import Preformer (preformCreeps)
+import Builder (buildRoom)
 import Spawn (initSpawn)
 import Data
 import Foreign.Object as F
@@ -53,7 +54,7 @@ runCorpsegrinder LoopGo          memory = do
     0 → freeCreepMemory game memory
     3 → manageCreeps game memory
     6 → processCreeps game memory
-    -- 9 → ???
+    9 → buildRoom game memory
     _ → pure unit
   preformCreeps game memory
 runCorpsegrinder LoopReset       memory = do

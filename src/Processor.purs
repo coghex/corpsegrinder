@@ -4,7 +4,7 @@ import UPrelude
 import Effect (Effect)
 import Effect.Console (log)
 import Data.Int ( quot )
-import Data.Array (index, uncons, filter)
+import Data.Array (index, uncons, filter, foldr)
 import Data.Argonaut.Core ( Json )
 import Data.Argonaut.Encode ( encodeJson )
 import Data.Argonaut.Decode ( decodeJson, getField )
@@ -17,6 +17,7 @@ import Screeps.Memory as Memory
 import Screeps.Structure.Spawn as Spawn
 import Screeps.Store as Store
 import Screeps.Const (resource_energy, pWork, pMove, pCarry)
+import Util (findCS)
 import Data
 
 -- | creeps change their roles here
@@ -27,23 +28,32 @@ processCreeps game memory = do
                  Left err → F.empty
                  Right c0 → c0
       utl0 = F.fold addUpUtils 0 creeps
-      newCreeps = F.mapWithKey (processCreep utl0 roleList creeps) creeps
+      newCreeps = F.mapWithKey (processCreep utl0 numCS roleList' creeps) creeps
+      -- TODO: this currently retreives global value, it should be per creep
+      --       since creeps will eventually need to be all over the map
+      numCS = foldr (+) 0 $ findCS $ F.values (Game.spawns game)
+      roleList' = map setArgs roleList
+      setArgs (RoleBuilder _) = RoleBuilder numCS
+      setArgs roleargument    = roleargument
   Memory.set memory "creeps"  newCreeps
   Memory.set memory "utility" utl0
-processCreep ∷ Int → Array Role → F.Object (F.Object Json) → String → F.Object Json → F.Object Json
-processCreep utl0 roles creeps key creep0 = creep2
-  where creep2  = F.update (\_ → newUtl)  "utility" creep1
-        creep1  = F.update (\_ → newRole) "role"    creep0
+processCreep ∷ Int → Int → Array Role → F.Object (F.Object Json)
+  → String → F.Object Json → F.Object Json
+processCreep utl0 numCS roles creeps key creep0 = creep3
+  where creep3  = F.update (\_ → newUtl)  "utility"  creep2
+        creep2  = F.update (\_ → newRole) "role"     creep1
+        creep1  = F.delete                "building" creep0
+        -- TODO: unset target here, or maybe not, doesnt really matter
+        --       if they are all dying all the time
         newUtl  = fromMaybeToMaybeJson newUtl'
         newUtl' = scores `index` ind
         ind     = findInd roles alt 0
         alt     = bestRole scores roles 0 RoleNULL
         newRole = Just $ encodeJson alt
-        scores  = map (calcRoleScore creeps role0) roleList
+        scores  = map (calcRoleScore creeps role0) roles
         role0   = case getField creep0 "role" of
                     Left _   → RoleNULL
                     Right r0 → r0
-
 bestRole ∷ Array Int → Array Role → Int → Role → Role
 bestRole []     _     _     role = role
 bestRole _      []    _     role = role
@@ -64,14 +74,14 @@ bestRole scores roles score role = if (score' > score) then bestRole scores' rol
 
 -- | finds the score for a given role for all the creeps at once
 calcRoleScore ∷ F.Object (F.Object Json) → Role → Role → Int
-calcRoleScore creeps _     RoleNULL      = 0
-calcRoleScore creeps _     RoleIdle      = 1
-calcRoleScore creeps role0 RoleBuilder   = 0 -- score
-  where score    = 800 `quot` (builders + 1)
-        builders = iDoThat + numberOfRole RoleBuilder creeps
+calcRoleScore creeps _     RoleNULL        = 0
+calcRoleScore creeps _     RoleIdle        = 1
+calcRoleScore creeps role0 (RoleBuilder n) = score
+  where score    = n * (400 `quot` (builders + 1))
+        builders = iDoThat + numberOfRole (RoleBuilder n) creeps
         iDoThat  = case role0 of
-                     RoleBuilder → -1
-                     _           → 0
+                     RoleBuilder _ → -1
+                     _             → 0
 calcRoleScore creeps role0 RoleHarvester = score
   where score   = 1000 `quot` ((10*harvs) + 1)
         harvs   = iDoThat + numberOfRole RoleHarvester creeps
