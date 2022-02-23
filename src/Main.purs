@@ -12,6 +12,7 @@ import Screeps.Memory as Memory
 import Screeps.Game as Game
 import Screeps.Creep as Creep
 import Screeps.Data
+import Memory
 import Manager (manageCreeps)
 import Processor (processCreeps)
 import Preformer (preformCreeps)
@@ -65,26 +66,3 @@ runCorpsegrinder LoopReset       memory = do
   manageCreeps game memory
 runCorpsegrinder (LoopError str) _      = log $ "Error: " <> str
 runCorpsegrinder LoopNULL        _      = pure unit
-
-freeCreepMemory ∷ GameGlobal → MemoryGlobal → Effect Unit
-freeCreepMemory game memory = do
-  creeps' ← Memory.get memory "creeps"
-  let creeps = case creeps'' of
-                 Left  _  → []
-                 Right c0 → F.keys c0
-      creeps'' = creeps' ∷ Either JsonDecodeError (F.Object Json)
-  freeCreepMemoryF game memory creeps
-freeCreepMemoryF ∷ GameGlobal → MemoryGlobal → Array String → Effect Unit
-freeCreepMemoryF _    _      []     = pure unit
-freeCreepMemoryF game memory creeps = do
-  if creepN `F.member` (Game.creeps game) then freeCreepMemoryF game memory creeps'
-  else do
-    log $ "freeing creep " <> creepN <> "..."
-    Memory.freeCreep memory creepN
-    freeCreepMemoryF game memory creeps'
-  where creeps' = case uncons creeps of
-                    Just {head: _, tail: cs} → cs
-                    Nothing                  → []
-        creepN  = case uncons creeps of
-                    Just {head: c, tail: _}  → c
-                    Nothing                  → ""

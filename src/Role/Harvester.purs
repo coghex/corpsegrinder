@@ -89,6 +89,7 @@ setNHarvsF sourceId (HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots }) =
   HarvestSpot { sourceName: sourceName, nHarvs:    (nHarvs + n)
               , nMaxHarvs:  nMaxHarvs,  harvSpots: harvSpots }
   where n = if (sourceId ≡ sourceName) then 1 else 0
+-- | remove a harvester from a spawn's memory
 removeNHarvs ∷ Array HarvestSpot → Id Source → Spawn → Effect Unit
 removeNHarvs harvs sourceId spawn = do
   let newHarvs = map (removeNHarvsF sourceId) harvs

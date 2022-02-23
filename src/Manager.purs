@@ -10,6 +10,7 @@ import Screeps.Data
 import Foreign.Object as F
 import Screeps.Game as Game
 import Screeps.Memory as Memory
+import Screeps.Structure as Structure
 import Screeps.Structure.Spawn as Spawn
 import Screeps.Structure.Controller as Controller
 import Screeps.Store as Store
@@ -65,7 +66,8 @@ createCreep _     _ = pure unit
 spawnCreep ∷ Spawn → Array BodyPartType
   → Role → CreepType → Effect Unit
 spawnCreep spawn parts r t = do
-    res ← Spawn.spawnCreep' spawn parts Nothing { typ: t, role: r, utility: 0 }
+    let h = Structure.id spawn
+    res ← Spawn.spawnCreep' spawn parts Nothing { typ: t, role: r, home: h, utility: 0 }
     case res of
         Left  err → log $ show err
         Right str → log $ str <> " created succesfully"
