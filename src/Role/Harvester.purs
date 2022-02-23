@@ -2,7 +2,7 @@ module Role.Harvester where
 import UPrelude
 import Effect (Effect)
 import Effect.Console (log)
-import Data.Array (index, length, foldr, filter, zip, head)
+import Data.Array (index, length, foldr, filter, zip, head, uncons)
 import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Data.Either (Either(..))
@@ -24,7 +24,7 @@ import Screeps.Source as Source
 import Screeps.Structure ( structureType )
 import Screeps.Structure.Spawn as Spawn
 import Util (distance)
-import Data (HarvestSpot(..))
+import Data (HarvestSpot(..), Spot(..))
 
 -- | a harvester moves between energy source and extension, spawn, or tower
 preformHarvester ∷ Creep → Effect Unit
@@ -116,12 +116,12 @@ isStorable _         _                   = false
 
 findNearest ∷ ∀ α. Array (RoomObject α) → RoomPosition → Maybe (RoomObject α)
 findNearest arr pos0 = index arr ind
-  where ind    = foldr min 0 dists
+  where ind    = foldr min 10000000 dists
         dists  = map (findDistance x0 y0) arr
         x0     = RP.x   pos0
         y0     = RP.y   pos0
 findDistance ∷ ∀ α. Int → Int → RoomObject α → Int
-findDistance x0 y0 obj = distance x1 y1 x0 y0
+findDistance x0 y0 obj = distance x0 y0 x1 y1
   where pos1 = RO.pos obj
         x1   = RP.x   pos1
         y1   = RP.y   pos1
@@ -129,22 +129,45 @@ findDistance x0 y0 obj = distance x1 y1 x0 y0
 -- will only return a source if it has capacity
 findNearestOpenSource ∷ Array HarvestSpot → Array Source → RoomPosition → Maybe Source
 -- if there was an error in reading harvestspots, just throw them away
---findNearestOpenSource [] arr pos0 = findNearest arr pos0
+--findNearestOpenSource _  arr pos0 = findNearest arr pos0
 findNearestOpenSource harvData arr pos0 = index arr ind
-  where ind    = foldr min 0 dists
+  where ind    = findMin dists
         dists  = map (findSourceDistance x0 y0) (zip harvData arr)
         x0     = RP.x pos0
         y0     = RP.y pos0
 findSourceDistance ∷ Int → Int → Tuple HarvestSpot Source → Int
-findSourceDistance x0 y0 (Tuple spot source) = if avail then distance x0 y0 x1 y1
+findSourceDistance x0 y0 (Tuple spot source) = if avail then distance x2 y2 x0 y0
                                                -- TODO: figure out the optimal value
                                                --       for when we can begin doubling
                                                --       up on creeps
-                                               else 10000
-  where pos1   = RO.pos source
-        x1     = RP.x   pos1
-        y1     = RP.y   pos1
+                                               else 1000000
+  where pos1      = RO.pos source
+        x1        = RP.x   pos1
+        y1        = RP.y   pos1
+        (HarvestSpot {sourceName, nHarvs, nMaxHarvs, harvSpots}) = spot
+        x2     = case (head (harvSpots)) of
+                   Nothing → 1000000
+                   Just (Spot {spotType, spotX, spotY}) → spotX
+        y2     = case (head (harvSpots)) of
+                   Nothing → 1000000
+                   Just (Spot {spotType, spotX, spotY}) → spotY
+
+
         avail  = spotAvailable spot
 spotAvailable ∷ HarvestSpot → Boolean
 spotAvailable (HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots })
   = nHarvs < nMaxHarvs
+
+findMin ∷ Array Int → Int
+findMin arr = findMinF arr 0 0 1000000
+findMinF ∷ Array Int → Int → Int → Int → Int
+findMinF []  n minn _   = minn
+findMinF arr n minn val = if (val' < val) then
+  findMinF arr' (n + 1) n val'
+  else findMinF arr' (n + 1) minn val
+  where val' = case uncons arr of
+                 Nothing                → 1000000
+                 Just {head:v0, tail:_} → v0
+        arr' = case uncons arr of
+                 Nothing                → []
+                 Just {head:_, tail:a0} → a0
