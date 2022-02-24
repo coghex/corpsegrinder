@@ -7,9 +7,16 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console (log)
 import Effect.Now (nowDateTime)
 import Control.Lazy (class Lazy)
+import Control.Monad.Reader ( asks )
 import Data.DateTime as DT
 import Data.Date as Date
 import Data.Time as Time
+import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
+import Data.Argonaut.Encode (class EncodeJson)
+import Data.Argonaut.Decode (class DecodeJson
+                            , printJsonDecodeError
+                            , JsonDecodeError)
 import Screeps.Memory as Memory
 import Screeps.Game   as Game
 import Control.Monad.Error.Class (class MonadError)
@@ -25,6 +32,13 @@ type Env = { memory ∷ MemoryGlobal, game ∷ GameGlobal }
 newtype CG ε α = CG (Env → Effect α)
 runCG ∷ ∀ α. CG Env α → Env → Effect α
 runCG (CG cg) = cg
+
+-- Exception data
+data CGExcept = CGSuccess | CGError | CGNULL
+instance showCGExcept ∷ Show CGExcept where
+  show CGSuccess = "success"
+  show CGError   = "error"
+  show CGNULL    = "NULL"
 
 -- Log data
 data LogLevel = LogDebug | LogInfo | LogWarn | LogError | LogNULL
@@ -62,7 +76,7 @@ instance applyCG ∷ Apply (CG ε) where
 -- instance lazyCG ∷ Lazy (CG Env m α) where
 --   defer f = CG \r → case f unit of CG f' → f' r
 instance monadEffectCG ∷ MonadEffect (CG ε) where
-  liftEffect m = CG $ \_ → m
+  liftEffect m = CG \_ → m
 -- reader
 instance monadAskCG    ∷ MonadAsk    Env   (CG ε) where
   ask       = CG $ \e → pure e
@@ -84,5 +98,22 @@ format dt@(DT.DateTime d t) = (show day)  <> "/" <> (show month) <> "/" <> (show
         min   = Time.minute t
         sec   = Time.second t
 
+-- base logging function
 log' ∷ LogLevel → String → CG Env Unit
 log' lvl str = liftEffect nowDateTime >>= logIO <<< { level: lvl, time: _, msg: str }
+
+-- gets a memory field, decodes json into maybe structure
+getMemField ∷ ∀ α. (DecodeJson α) ⇒ String → CG Env (Maybe α)
+getMemField field = do
+  mem ← asks (_.memory)
+  ret ← liftEffect $ Memory.get mem field
+  case ret of
+    Left err → do
+      log' LogError $ printJsonDecodeError err
+      pure Nothing
+    Right v0 → pure v0
+-- sets a memory field
+setMemField ∷ ∀ α. (EncodeJson α) ⇒ String → α → CG Env Unit
+setMemField field val = do
+  mem ← asks (_.memory)
+  liftEffect $ Memory.set mem field val

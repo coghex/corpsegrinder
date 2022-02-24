@@ -4,7 +4,7 @@ import UPrelude
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
-import Control.Monad.Reader ( asks )
+import Control.Monad.Reader (asks, ask)
 import Data.Array (uncons)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
@@ -24,6 +24,11 @@ import Data
 import CG
 import Foreign.Object as F
 
+checkStatus ∷ Either CGExcept Unit → Effect Unit
+checkStatus (Right unit) = pure unit
+checkStatus (Left  err)  = do
+  log $ show err
+  -- exitFailure
 main ∷ Effect Unit
 main = do
   m ← Memory.getMemoryGlobal
@@ -32,25 +37,21 @@ main = do
 corpseGrinder ∷ CG Env Unit
 corpseGrinder = do
   memory ← asks (_.memory)
-  log' LogInfo "starting the corpseGrinder"
-  loopStatus ← liftEffect $ Memory.get memory "loopStatus"
-  let ls = loopStatus ∷ Either JsonDecodeError (Maybe LoopStatus)
-  case ls of
-    Left err → liftEffect $ log $ printJsonDecodeError err
-    Right status → case status of
-      Nothing  → liftEffect $ Memory.set memory "loopStatus" LoopStart
-      Just ls0 → liftEffect $ runCorpsegrinder ls0 memory
+  loopStatus ← getMemField "loopStatus"
+  case loopStatus of
+      Nothing  → setMemField "loopStatus" LoopStart
+      Just ls0 → runCorpsegrinder ls0 memory
 
-runCorpsegrinder ∷ LoopStatus → MemoryGlobal → Effect Unit
+runCorpsegrinder ∷ LoopStatus → MemoryGlobal → CG Env Unit
 runCorpsegrinder LoopStart       memory = do
-  log "starting the corpsegrinder..."
-  Memory.set memory "loopStatus" LoopGo
-  Memory.set memory "utility"    0
-  game ← Game.getGameGlobal
-  initSpawn game
-  manageCreeps game memory
+  {memory:memory, game:game} ← ask
+  log' LogInfo "starting the corpsegrinder..."
+  setMemField "loopStatus" LoopGo
+  setMemField "utility"    0
+  liftEffect $ initSpawn game
+  liftEffect $ manageCreeps game memory
 runCorpsegrinder LoopGo          memory = do
-  game ← Game.getGameGlobal
+  {memory:memory, game:game} ← ask
   -- TODO: figure out how to reset the game memory
   -- check if there is a spawn, if not reset
 --   if (F.size (Game.spawns game)) < 1 
@@ -60,19 +61,19 @@ runCorpsegrinder LoopGo          memory = do
       modT = time `mod` 12
   -- the following functions will get called once every 12 ticks
   case modT of
-    0 → freeCreepMemory game memory
-    3 → manageCreeps game memory
-    6 → processCreeps game memory
-    9 → buildRoom game memory
+    0 → liftEffect $ freeCreepMemory game memory
+    3 → liftEffect $ manageCreeps game memory
+    6 → liftEffect $ processCreeps game memory
+    9 → liftEffect $ buildRoom game memory
     _ → pure unit
-  preformCreeps game memory
+  liftEffect $ preformCreeps game memory
 runCorpsegrinder LoopReset       memory = do
-  log $ "resetting the corpsegrinder..."
-  Memory.clear memory
-  Memory.set memory "loopStatus" LoopGo
-  Memory.set memory "utility"    0
-  game ← Game.getGameGlobal
-  initSpawn game
-  manageCreeps game memory
-runCorpsegrinder (LoopError str) _      = log $ "Error: " <> str
+  {memory:memory, game:game} ← ask
+  log' LogInfo $ "resetting the corpsegrinder..."
+  liftEffect $ Memory.clear memory
+  setMemField "loopStatus" LoopGo
+  setMemField "utility"    0
+  liftEffect $ initSpawn game
+  liftEffect $ manageCreeps game memory
+runCorpsegrinder (LoopError str) _      = log' LogError $ "Error: " <> str
 runCorpsegrinder LoopNULL        _      = pure unit
