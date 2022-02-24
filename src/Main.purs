@@ -29,9 +29,10 @@ main = do
   m ← Memory.getMemoryGlobal
   g ← Game.getGameGlobal
   runCG corpseGrinder { memory:m, game:g }
-corpseGrinder ∷ ∀ ε. CG ε Unit
+corpseGrinder ∷ CG Env Unit
 corpseGrinder = do
   memory ← asks (_.memory)
+  log' LogInfo "starting the corpseGrinder"
   loopStatus ← liftEffect $ Memory.get memory "loopStatus"
   let ls = loopStatus ∷ Either JsonDecodeError (Maybe LoopStatus)
   case ls of
