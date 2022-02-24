@@ -13,12 +13,15 @@ import Data.Date as Date
 import Data.Time as Time
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
+import Data.Enum (fromEnum)
 import Data.Argonaut.Encode (class EncodeJson)
 import Data.Argonaut.Decode (class DecodeJson
                             , printJsonDecodeError
                             , JsonDecodeError)
 import Screeps.Memory as Memory
 import Screeps.Game   as Game
+import Screeps.Creep  as Creep
+import Screeps.Structure.Spawn as Spawn
 import Control.Monad.Error.Class (class MonadError)
 import Control.Monad.Reader.Class (class MonadAsk, class MonadReader)
 import Control.Monad.Trans.Class (class MonadTrans, lift)
@@ -86,11 +89,15 @@ instance monadReaderCG ∷ MonadReader Env   (CG ε) where
 
 instance monadLogCG ∷ MonadLog (CG ε) where
   logIO {level:lvl,time:t,msg:m}
-    = liftEffect $ log $ (show lvl) <> ": [" <> (format t) <> "]: " <> m
+    = liftEffect $ log $ "[" <> (format t) <> "]: " <> (show lvl) <> ": " <> m
 
 format ∷ DT.DateTime → String
-format dt@(DT.DateTime d t) = (show day)  <> "/" <> (show month) <> "/" <> (show year)
-             <> ": " <> (show hour) <> ":" <> (show min)   <> ":" <> (show sec)
+format dt@(DT.DateTime d t) = (show $ fromEnum day)   <> "/"
+                           <> show month              <> "/"
+                           <> (show $ fromEnum year)  <> ": "
+                           <> (show $ fromEnum hour)  <> ":"
+                           <> (show $ fromEnum min)   <> ":"
+                           <> (show $ fromEnum sec)
   where day   = Date.day    d
         month = Date.month  d
         year  = Date.year   d
@@ -117,3 +124,27 @@ setMemField ∷ ∀ α. (EncodeJson α) ⇒ String → α → CG Env Unit
 setMemField field val = do
   mem ← asks (_.memory)
   liftEffect $ Memory.set mem field val
+
+-- gets and sets memory for spawns
+getSpawnMem ∷ ∀ α. (DecodeJson α) ⇒ Spawn → String → CG Env (Maybe α)
+getSpawnMem spawn field = do
+  ret ← liftEffect $ Spawn.getMemory spawn field
+  case ret of
+    Left err → do
+      log' LogError $ printJsonDecodeError err
+      pure Nothing
+    Right v0 → pure v0
+setSpawnMem ∷ ∀ α. (EncodeJson α) ⇒ Spawn → String → α → CG Env Unit
+setSpawnMem spawn field val = liftEffect $ Spawn.setMemory spawn field val
+
+-- gets and sets memory for creeps
+getCreepMem ∷ ∀ α. (DecodeJson α) ⇒ Creep → String → CG Env (Maybe α)
+getCreepMem creep field = do
+  ret ← liftEffect $ Creep.getMemory creep field
+  case ret of
+    Left err → do
+      log' LogError $ printJsonDecodeError err
+      pure Nothing
+    Right v0 → pure v0
+setCreepMem ∷ ∀ α. (EncodeJson α) ⇒ Creep → String → α → CG Env Unit
+setCreepMem creep field val = liftEffect $ Creep.setMemory creep field val

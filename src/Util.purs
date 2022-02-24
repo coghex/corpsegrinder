@@ -10,12 +10,12 @@ import Screeps.Data
 import Screeps.Room ( find )
 import Screeps.RoomObject as RO
 import Screeps.RoomPosition as RP
-import Screeps.Structure.Spawn as Spawn
 import Screeps.Structure ( structureType )
 import Screeps.Store as Store
 import Screeps.Const ( resource_energy, find_my_construction_sites)
 import Maths (distance, findMin)
 import Data (HarvestSpot(..), Spot(..))
+import CG
 
 -- | basic functino to find nearest object of type
 findNearest ∷ ∀ α. Array (RoomObject α) → RoomPosition → Maybe (RoomObject α)
@@ -62,20 +62,20 @@ spotAvailable ∷ HarvestSpot → Boolean
 spotAvailable (HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots })
   = nHarvs < nMaxHarvs
 
-setNHarvs ∷ Array HarvestSpot → Id Source → Spawn → Effect Unit
+setNHarvs ∷ Array HarvestSpot → Id Source → Spawn → CG Env Unit
 setNHarvs harvs sourceId spawn = do
   let newHarvs = map (setNHarvsF sourceId) harvs
-  Spawn.setMemory spawn "harvestSpots" newHarvs
+  setSpawnMem spawn "harvestSpots" newHarvs
 setNHarvsF ∷ Id Source → HarvestSpot → HarvestSpot
 setNHarvsF sourceId (HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots }) =
   HarvestSpot { sourceName: sourceName, nHarvs:    (nHarvs + n)
               , nMaxHarvs:  nMaxHarvs,  harvSpots: harvSpots }
   where n = if (sourceId ≡ sourceName) then 1 else 0
 -- | remove a harvester from a spawn's memory
-removeNHarvs ∷ Array HarvestSpot → Id Source → Spawn → Effect Unit
+removeNHarvs ∷ Array HarvestSpot → Id Source → Spawn → CG Env Unit
 removeNHarvs harvs sourceId spawn = do
   let newHarvs = map (removeNHarvsF sourceId) harvs
-  Spawn.setMemory spawn "harvestSpots" newHarvs
+  setSpawnMem spawn "harvestSpots" newHarvs
 removeNHarvsF ∷ Id Source → HarvestSpot → HarvestSpot
 removeNHarvsF sourceId (HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots }) =
   HarvestSpot { sourceName: sourceName, nHarvs:    (nHarvs - n)

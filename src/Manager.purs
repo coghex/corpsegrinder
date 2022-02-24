@@ -1,8 +1,6 @@
 module Manager where
 
 import UPrelude
-import Effect (Effect)
-import Effect.Console (log)
 import Effect.Class (liftEffect)
 import Data.Array (foldr)
 import Data.Either (Either(..))
@@ -11,7 +9,6 @@ import Control.Monad.Reader (ask)
 import Screeps.Data
 import Foreign.Object as F
 import Screeps.Game as Game
-import Screeps.Memory as Memory
 import Screeps.Structure as Structure
 import Screeps.Structure.Spawn as Spawn
 import Screeps.Structure.Controller as Controller
@@ -51,10 +48,10 @@ manageCreeps = do
 -- | finds the maximum number of creeps at different levels
 calcMaxCreeps ∷ Int → Spawn → CG Env Int
 calcMaxCreeps 1 spawn = do
-  ret ← liftEffect $ Spawn.getMemory spawn "harvestSpots"
+  ret ← getSpawnMem spawn "harvestSpots"
   case ret of
-    Left  _  → pure 0
-    Right h0 → pure $ foldr (addHarvestSpots) 0 h0
+    Nothing → pure 0
+    Just h0 → pure $ foldr (addHarvestSpots) 0 h0
 calcMaxCreeps _ _     = pure 0
 addHarvestSpots ∷ HarvestSpot → Int → Int
 addHarvestSpots (HarvestSpot {sourceName, nHarvs, nMaxHarvs, harvSpots}) n

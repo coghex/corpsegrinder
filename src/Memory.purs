@@ -1,8 +1,6 @@
 module Memory where
 
 import UPrelude
-import Effect (Effect)
-import Effect.Console (log)
 import Effect.Class ( liftEffect )
 import Control.Monad.Reader (asks)
 import Data.Array (uncons, head, tail)
@@ -14,7 +12,6 @@ import Screeps.Data
 import Foreign.Object as F
 import Screeps.Creep as Creep
 import Screeps.Game as Game
-import Screeps.Structure.Spawn as Spawn
 import Screeps.Memory as Memory
 import Data (CreepType, Role, HarvestSpot)
 import Util ( removeNHarvs )
@@ -57,6 +54,7 @@ freeCreepMemoryF mem creeps = do
                     Just {head: c, tail: _}  → c
                     Nothing                  → ""
 
+-- | removes creeps nharv value on a source when it dies
 freeSpawnNHarv ∷ Id Source → Id Spawn → CG Env Unit
 freeSpawnNHarv destid spawnid = do
   game ← asks (_.game)
@@ -64,7 +62,13 @@ freeSpawnNHarv destid spawnid = do
   case spawn' of
     Nothing → log' LogWarn "spawn has no memory"
     Just spawn → do
-      harvSpots' ← liftEffect $ Spawn.getMemory spawn "harvestSpots"
+      harvSpots' ← getSpawnMem spawn "harvestSpots"
       case harvSpots' of
-        Left err → log' LogWarn "destination not a spawn"
-        Right harvSpots → liftEffect $ removeNHarvs harvSpots destid spawn
+        Nothing → log' LogWarn "destination not a spawn"
+        Just harvSpots → removeNHarvs harvSpots destid spawn
+
+-- | clears all data, used for reset
+clearMem ∷ CG Env Unit
+clearMem = do
+  memory ← asks (_.memory)
+  liftEffect $ Memory.clear memory

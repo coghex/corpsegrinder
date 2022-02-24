@@ -1,8 +1,6 @@
 module Builder where
 
 import UPrelude
-import Effect (Effect)
-import Effect.Console (log)
 import Screeps.Data
 import CG
 

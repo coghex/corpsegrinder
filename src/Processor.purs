@@ -1,8 +1,6 @@
 module Processor where
 
 import UPrelude
-import Effect (Effect)
-import Effect.Console (log)
 import Control.Monad.Reader (asks)
 import Data.Int ( quot )
 import Data.Array (index, uncons, filter, foldr)
@@ -14,8 +12,6 @@ import Data.Maybe (Maybe(..))
 import Screeps.Data
 import Foreign.Object as F
 import Screeps.Game as Game
-import Screeps.Memory as Memory
-import Screeps.Structure.Spawn as Spawn
 import Screeps.Store as Store
 import Screeps.Const (resource_energy, pWork, pMove, pCarry)
 import Util (findCS)

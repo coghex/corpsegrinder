@@ -1,7 +1,5 @@
 module Role.Builder where
 import UPrelude
-import Effect (Effect)
-import Effect.Console (log)
 import Effect.Class (liftEffect)
 import Control.Monad.Reader (asks)
 import Data.Array (index, length, head)
@@ -13,7 +11,6 @@ import Screeps.Const ( err_not_in_range, find_sources, find_my_spawns
                      , find_construction_sites, resource_energy
                      , structure_spawn, structure_tower
                      , structure_extension )
-import Screeps.Memory as Memory
 import Screeps.Data
 import Screeps.Creep as Creep
 import Screeps.Room ( find, find' )
@@ -21,7 +18,6 @@ import Screeps.RoomObject as RO
 import Screeps.Game as Game
 import Screeps.Store as Store
 import Screeps.Source as Source
-import Screeps.Structure.Spawn as Spawn
 import Screeps.Structure ( structureType )
 import Foreign.Object as F
 import Util (findNearest, findNearestOpenSource, setNHarvs, removeNHarvs)
@@ -86,17 +82,17 @@ preformBuilderFF creep building = if building then do
         harvSs ← case spawn of
                    Nothing → pure []
                    Just s1 → do
-                     ret ← liftEffect $ Spawn.getMemory s1 "harvestSpots"
+                     ret ← getSpawnMem s1 "harvestSpots"
                      case ret of
-                       Left  _  → pure []
-                       Right h0 → pure h0
+                       Nothing → pure []
+                       Just h0 → pure h0
         case (findNearestOpenSource harvSs sources (RO.pos creep)) of
           Nothing → pure unit
           Just nearestSource → do
                  liftEffect $ Creep.setMemory creep "target" (Source.id nearestSource)
                  case spawn of
                    Nothing → pure unit
-                   Just s0 → liftEffect $ setNHarvs harvSs (Source.id nearestSource) s0
+                   Just s0 → setNHarvs harvSs (Source.id nearestSource) s0
       Right d0 → do
         game ← asks (_.game)
         let nearestSource' = Game.getObjectById game d0

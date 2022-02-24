@@ -1,8 +1,6 @@
 module Preformer where
 
 import UPrelude
-import Effect (Effect)
-import Effect.Console (log)
 import Control.Monad.Reader (asks)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
@@ -13,7 +11,6 @@ import Data.Argonaut.Decode (getField)
 import Screeps.Data
 import Foreign.Object as F
 import Screeps.Game as Game
-import Screeps.Memory as Memory
 import Screeps.Structure.Spawn as Spawn
 import Screeps.Store as Store
 import Screeps.Const (resource_energy, pWork, pMove, pCarry)

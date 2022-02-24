@@ -1,8 +1,6 @@
 module Spawn where
 
 import UPrelude
-import Effect (Effect)
-import Effect.Console (log)
 import Effect.Class (liftEffect)
 import Control.Monad.Reader (asks)
 import Data.Maybe (Maybe(..))
@@ -15,7 +13,6 @@ import Screeps.RoomObject as RO
 import Screeps.RoomPosition as RP
 import Screeps.RoomTerrain as RT
 import Screeps.Source as Source
-import Screeps.Structure.Spawn as Spawn
 import Foreign.Object as F
 import Data
 import CG
@@ -32,7 +29,7 @@ initSpawn = do
       let r            = RO.room s1
           harvestSpots = findAllHarvestSpots r sources
           sources      = Room.find r find_sources
-      liftEffect $ Spawn.setMemory s1 "harvestSpots" harvestSpots
+      setSpawnMem s1 "harvestSpots" harvestSpots
 
 findAllHarvestSpots ∷ Room → Array Source → Array HarvestSpot
 findAllHarvestSpots _    []      = []
