@@ -3,6 +3,8 @@ module Spawn where
 import UPrelude
 import Effect (Effect)
 import Effect.Console (log)
+import Effect.Class (liftEffect)
+import Control.Monad.Reader (asks)
 import Data.Maybe (Maybe(..))
 import Data.Array (uncons, length, filter)
 import Screeps.Data
@@ -16,9 +18,11 @@ import Screeps.Source as Source
 import Screeps.Structure.Spawn as Spawn
 import Foreign.Object as F
 import Data
+import CG
 
-initSpawn ∷ GameGlobal → Effect Unit
-initSpawn game = do
+initSpawn ∷ CG Env Unit
+initSpawn = do
+  game ← asks (_.game)
   let spawnsList = Game.spawns game
   -- TODO: generalize the following
       spawn1     = F.lookup "Spawn1" spawnsList
@@ -28,7 +32,7 @@ initSpawn game = do
       let r            = RO.room s1
           harvestSpots = findAllHarvestSpots r sources
           sources      = Room.find r find_sources
-      Spawn.setMemory s1 "harvestSpots" harvestSpots
+      liftEffect $ Spawn.setMemory s1 "harvestSpots" harvestSpots
 
 findAllHarvestSpots ∷ Room → Array Source → Array HarvestSpot
 findAllHarvestSpots _    []      = []

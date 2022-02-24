@@ -4,6 +4,7 @@ import UPrelude
 import Effect (Effect)
 import Effect.Console (log)
 import Screeps.Data
+import CG
 
-buildRoom ∷ GameGlobal → MemoryGlobal → Effect Unit
-buildRoom game memory = pure unit
+buildRoom ∷ CG Env Unit
+buildRoom = pure unit

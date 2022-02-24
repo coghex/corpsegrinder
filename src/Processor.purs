@@ -3,6 +3,7 @@ module Processor where
 import UPrelude
 import Effect (Effect)
 import Effect.Console (log)
+import Control.Monad.Reader (asks)
 import Data.Int ( quot )
 import Data.Array (index, uncons, filter, foldr)
 import Data.Argonaut.Core ( Json )
@@ -19,14 +20,16 @@ import Screeps.Store as Store
 import Screeps.Const (resource_energy, pWork, pMove, pCarry)
 import Util (findCS)
 import Data
+import CG
 
 -- | creeps change their roles here
-processCreeps ∷ GameGlobal → MemoryGlobal → Effect Unit
-processCreeps game memory = do
-  creeps' ← Memory.get memory "creeps"
+processCreeps ∷ CG Env Unit
+processCreeps = do
+  game ← asks (_.game)
+  creeps' ← getMemField "creeps"
   let creeps = case creeps' of
-                 Left err → F.empty
-                 Right c0 → c0
+                 Nothing → F.empty
+                 Just c0 → c0
       utl0 = F.fold addUpUtils 0 creeps
       newCreeps = F.mapWithKey (processCreep utl0 numCS roleList' creeps) creeps
       -- TODO: this currently retreives global value, it should be per creep
@@ -35,8 +38,8 @@ processCreeps game memory = do
       roleList' = map setArgs roleList
       setArgs (RoleBuilder _) = RoleBuilder numCS
       setArgs roleargument    = roleargument
-  Memory.set memory "creeps"  newCreeps
-  Memory.set memory "utility" utl0
+  setMemField "creeps"  newCreeps
+  setMemField "utility" utl0
 processCreep ∷ Int → Int → Array Role → F.Object (F.Object Json)
   → String → F.Object Json → F.Object Json
 processCreep utl0 numCS roles creeps key creep0 = creep3
