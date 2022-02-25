@@ -20,6 +20,7 @@ import Screeps.Source as Source
 import Screeps.Structure ( structureType )
 import Foreign.Object as F
 import Util (findNearest, findNearestOpenSource, setNHarvs, removeNHarvs)
+import Creep.Peon (getEnergy)
 import CG
 
 -- | a builder moves between mining for energy and building construction sites
@@ -63,43 +64,4 @@ preformBuilderFF creep building = if building then do
           pure unit
         else pure unit
    else pure unit
-  else do
-    dest ← getCreepMem creep "target"
-    case dest of
-      Nothing → do
-        game ← asks (_.game)
-        home ← getCreepMem creep "home"
-        let sources = find (RO.room creep) find_sources
-            spawns  = find (RO.room creep) find_my_spawns
-            spawn   = case home of
-                        Nothing → head spawns
-                        Just h0 → case (Game.getObjectById game h0) of
-                                     Nothing → head spawns
-                                     Just s0 → Just s0
-        harvSs ← case spawn of
-                   Nothing → pure []
-                   Just s1 → do
-                     ret ← getSpawnMem s1 "harvestSpots"
-                     case ret of
-                       Nothing → pure []
-                       Just h0 → pure h0
-        case (findNearestOpenSource harvSs sources (RO.pos creep)) of
-          Nothing → pure unit
-          Just nearestSource → do
-                 setCreepMem creep "target" (Source.id nearestSource)
-                 case spawn of
-                   Nothing → pure unit
-                   Just s0 → setNHarvs harvSs (Source.id nearestSource) s0
-      Just d0 → do
-        game ← asks (_.game)
-        let nearestSource' = Game.getObjectById game d0
-        case nearestSource' of
-          Nothing → log' LogWarn $ "creep " <> (Creep.name creep)
-                                   <> " has lost its destination: "
-                                   <> (show d0)
-          Just nearestSource → do
-            harv ← creepHarvest creep nearestSource
-            if harv ≡ err_not_in_range then do
-              ret ← moveCreepTo creep (TargetObj nearestSource)
-              pure unit
-            else pure unit
+  else getEnergy creep
