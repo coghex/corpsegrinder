@@ -1,7 +1,6 @@
 module Spawn where
 
 import UPrelude
-import Effect.Class (liftEffect)
 import Control.Monad.Reader (asks)
 import Data.Maybe (Maybe(..))
 import Data.Array (uncons, length, filter)

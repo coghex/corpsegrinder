@@ -1,8 +1,6 @@
 module Util where
 
 import UPrelude
-import Effect (Effect)
-import Effect.Console (log)
 import Data.Array (index, head, zip, length)
 import Data.Tuple (Tuple(..))
 import Data.Maybe (Maybe(..))

@@ -1,6 +1,5 @@
 module Role.Builder where
 import UPrelude
-import Effect.Class (liftEffect)
 import Control.Monad.Reader (asks)
 import Data.Array (index, length, head)
 import Data.Maybe (Maybe(..))
@@ -26,19 +25,17 @@ import CG
 -- | a builder moves between mining for energy and building construction sites
 preformBuilder ∷ Creep → CG Env Unit
 preformBuilder creep = do
-  mem ← liftEffect $ Creep.memory creep
+  mem ← getAllCreepMem creep
   case mem of
-    Left err → do
-      log' LogError $ "creep error: " <> (show err)
-      pure unit
-    Right d0 → preformBuilderF creep d0
+    Nothing → pure unit
+    Just d0 → preformBuilderF creep d0
 preformBuilderF ∷ Creep → F.Object Json → CG Env Unit
 preformBuilderF creep mem = do
   case (getField mem "building") of
     -- this means its a new builder, so set the memory
     -- accordingly first, then continue
     Left  _        → do
-      liftEffect $ Creep.setMemory creep "building" false
+      setCreepMem creep "building" false
       preformBuilderFF creep false
     -- if we are already a builder this will be set already
     Right building → preformBuilderFF creep building
@@ -52,31 +49,31 @@ preformBuilderFF creep building = if building then do
                          Nothing → 0
                          Just c0 → Store.getFreeCapacity c0
     if energy <= 0 then do
-      liftEffect $ Creep.setMemory creep "building" false
+      setCreepMem creep "building" false
     else if freeCapacity == 0 then do
-      liftEffect $ Creep.setMemory creep "building" true
+      setCreepMem creep "building" true
     else pure unit
     let targets = find (RO.room creep) find_construction_sites
     case (findNearest targets (RO.pos creep)) of
       Nothing → pure unit
       Just nearestTarget → if (length targets > 0) then do
-        res ← liftEffect $ Creep.build creep nearestTarget
+        res ← creepBuild creep nearestTarget
         if (res == err_not_in_range) then do
-          ret ← liftEffect $ Creep.moveTo creep (TargetObj nearestTarget)
+          ret ← moveCreepTo creep (TargetObj nearestTarget)
           pure unit
         else pure unit
    else pure unit
   else do
-    dest ← liftEffect $ Creep.getMemory creep "target"
+    dest ← getCreepMem creep "target"
     case dest of
-      Left  _  → do
+      Nothing → do
         game ← asks (_.game)
-        home ← liftEffect $ Creep.getMemory creep "home"
+        home ← getCreepMem creep "home"
         let sources = find (RO.room creep) find_sources
             spawns  = find (RO.room creep) find_my_spawns
             spawn   = case home of
-                        Left  _  → head spawns
-                        Right h0 → case (Game.getObjectById game h0) of
+                        Nothing → head spawns
+                        Just h0 → case (Game.getObjectById game h0) of
                                      Nothing → head spawns
                                      Just s0 → Just s0
         harvSs ← case spawn of
@@ -89,11 +86,11 @@ preformBuilderFF creep building = if building then do
         case (findNearestOpenSource harvSs sources (RO.pos creep)) of
           Nothing → pure unit
           Just nearestSource → do
-                 liftEffect $ Creep.setMemory creep "target" (Source.id nearestSource)
+                 setCreepMem creep "target" (Source.id nearestSource)
                  case spawn of
                    Nothing → pure unit
                    Just s0 → setNHarvs harvSs (Source.id nearestSource) s0
-      Right d0 → do
+      Just d0 → do
         game ← asks (_.game)
         let nearestSource' = Game.getObjectById game d0
         case nearestSource' of
@@ -101,8 +98,8 @@ preformBuilderFF creep building = if building then do
                                    <> " has lost its destination: "
                                    <> (show d0)
           Just nearestSource → do
-            harv ← liftEffect $ Creep.harvest creep nearestSource
+            harv ← creepHarvest creep nearestSource
             if harv ≡ err_not_in_range then do
-              ret ← liftEffect $ Creep.moveTo creep (TargetObj nearestSource)
+              ret ← moveCreepTo creep (TargetObj nearestSource)
               pure unit
             else pure unit

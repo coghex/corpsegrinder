@@ -1,7 +1,6 @@
 module Manager where
 
 import UPrelude
-import Effect.Class (liftEffect)
 import Data.Array (foldr)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
@@ -60,15 +59,15 @@ addHarvestSpots (HarvestSpot {sourceName, nHarvs, nMaxHarvs, harvSpots}) n
 -- | basic creep creation function
 createCreep ∷ Spawn → Int → CG Env Unit
 createCreep spawn 1 = do
-    spawnCreep spawn [pWork,pCarry,pMove,pMove] RoleIdle CreepPeon
+    spawnCreepWith spawn [pWork,pCarry,pMove,pMove] RoleIdle CreepPeon
 createCreep _     _ = pure unit
 
 -- | pattern match helper function
-spawnCreep ∷ Spawn → Array BodyPartType
+spawnCreepWith ∷ Spawn → Array BodyPartType
   → Role → CreepType → CG Env Unit
-spawnCreep spawn parts r t = do
+spawnCreepWith spawn parts r t = do
     let h = Structure.id spawn
-    res ← liftEffect $ Spawn.spawnCreep' spawn parts Nothing { typ: t, role: r, home: h, utility: 0 }
+    res ← spawnCreep spawn parts Nothing { typ: t, role: r, home: h, utility: 0 }
     case res of
-        Left  err → log' LogDebug $ show err
-        Right str → log' LogDebug $ str <> " created succesfully"
+        Nothing → log' LogWarn  "cant create creep"
+        Just s0 → log' LogDebug $ s0 <> " created succesfully"

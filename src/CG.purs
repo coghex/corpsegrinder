@@ -21,6 +21,7 @@ import Data.Argonaut.Decode (class DecodeJson
 import Screeps.Memory as Memory
 import Screeps.Game   as Game
 import Screeps.Creep  as Creep
+import Screeps.Const
 import Screeps.Structure.Spawn as Spawn
 import Control.Monad.Error.Class (class MonadError)
 import Control.Monad.Reader.Class (class MonadAsk, class MonadReader)
@@ -137,7 +138,26 @@ getSpawnMem spawn field = do
 setSpawnMem ∷ ∀ α. (EncodeJson α) ⇒ Spawn → String → α → CG Env Unit
 setSpawnMem spawn field val = liftEffect $ Spawn.setMemory spawn field val
 
--- gets and sets memory for creeps
+-- spawns a creep with memory, returns a name
+spawnCreep ∷ ∀ α. (EncodeJson α) ⇒ Spawn → Array BodyPartType
+  → Maybe String → α → CG Env (Maybe String)
+spawnCreep spawn parts name' mem = do
+  ret ← liftEffect $ Spawn.spawnCreep' spawn parts name' mem
+  case ret of
+    Left err → do
+      log' LogError $ show err
+      pure Nothing
+    Right r0 → pure $ Just r0
+
+-- gets and sets memory for creeps, all at once, or in fields
+getAllCreepMem ∷ ∀ α. (DecodeJson α) ⇒ Creep → CG Env (Maybe α)
+getAllCreepMem creep = do
+  ret ← liftEffect $ Creep.memory creep
+  case ret of
+    Left err → do
+      log' LogError $ printJsonDecodeError err
+      pure Nothing
+    Right v0 → pure v0
 getCreepMem ∷ ∀ α. (DecodeJson α) ⇒ Creep → String → CG Env (Maybe α)
 getCreepMem creep field = do
   ret ← liftEffect $ Creep.getMemory creep field
@@ -148,3 +168,25 @@ getCreepMem creep field = do
     Right v0 → pure v0
 setCreepMem ∷ ∀ α. (EncodeJson α) ⇒ Creep → String → α → CG Env Unit
 setCreepMem creep field val = liftEffect $ Creep.setMemory creep field val
+
+-- | clears all data, used for reset
+clearMem ∷ CG Env Unit
+clearMem = do
+  memory ← asks (_.memory)
+  liftEffect $ Memory.clear memory
+
+-- | clears just the data for a creep
+freeCreepMem ∷ String → CG Env Unit
+freeCreepMem n = do
+  memory ← asks (_.memory)
+  liftEffect $ Memory.freeCreep memory n
+
+-- | some other creep functions
+creepHarvest ∷ ∀ α. Creep → RoomObject α → CG Env ReturnCode
+creepHarvest creep obj = liftEffect $ Creep.harvest creep obj
+transferResourceTo ∷ ∀ α. Creep → RoomObject α → ResourceType → CG Env ReturnCode
+transferResourceTo creep obj rsc = liftEffect $ Creep.transfer creep obj rsc
+moveCreepTo ∷ ∀ α. Creep → TargetPosition α → CG Env ReturnCode
+moveCreepTo creep pos = liftEffect $ Creep.moveTo creep pos
+creepBuild ∷ Creep → ConstructionSite → CG Env ReturnCode
+creepBuild creep site = liftEffect $ Creep.build creep site

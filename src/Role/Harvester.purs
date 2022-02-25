@@ -1,6 +1,5 @@
 module Role.Harvester where
 import UPrelude
-import Effect.Class (liftEffect)
 import Control.Monad.Reader (asks)
 import Data.Array (index, length, foldr, filter, zip, head, uncons)
 import Data.Maybe (Maybe(..))
@@ -34,18 +33,18 @@ preformHarvester creep = do
                        Nothing → 0
                        Just s0 → Store.getFreeCapacity (Creep.store creep)
   if freeCapacity > 0 then do
-    dest ← liftEffect $ Creep.getMemory creep "target"
+    dest ← getCreepMem creep "target"
     case dest of
-      Left  _  → do
-        home ← liftEffect $ Creep.getMemory creep "home"
+      Nothing → do
+        home ← getCreepMem creep "home"
         game ← asks (_.game)
         let sources = find (RO.room creep) find_sources
             -- room memory is associated with each spawn right now
             spawns  = find (RO.room creep) find_my_spawns
             -- assume one spawn per room, uses home if exists
             spawn   = case home of
-                        Left  _  → head spawns
-                        Right h0 → case (Game.getObjectById game h0) of
+                        Nothing → head spawns
+                        Just h0 → case (Game.getObjectById game h0) of
                                      Nothing → head spawns
                                      Just s0 → Just s0
         harvSs ← case spawn of
@@ -58,11 +57,11 @@ preformHarvester creep = do
         case (findNearestOpenSource harvSs sources (RO.pos creep)) of
           Nothing → pure unit
           Just nearestSource → do
-                  liftEffect $ Creep.setMemory creep "target" (Source.id nearestSource)
+                  setCreepMem creep "target" (Source.id nearestSource)
                   case spawn of
                     Nothing → pure unit
                     Just s0 → setNHarvs harvSs (Source.id nearestSource) s0
-      Right d0 → do
+      Just d0 → do
         game ← asks (_.game)
         let nearestSource' = Game.getObjectById game d0
         case nearestSource' of
@@ -70,9 +69,9 @@ preformHarvester creep = do
                                             <> " has lost its destination: "
                                             <> (show d0)
           Just nearestSource → do
-            harv ← liftEffect $ Creep.harvest creep nearestSource
+            harv ← creepHarvest creep nearestSource
             if harv ≡ err_not_in_range then do
-              ret ← liftEffect $ Creep.moveTo creep (TargetObj nearestSource)
+              ret ← moveCreepTo creep (TargetObj nearestSource)
               pure unit
             else pure unit
   else do
@@ -81,9 +80,9 @@ preformHarvester creep = do
     case (findNearest targets (RO.pos creep)) of
       Nothing → pure unit
       Just nearestTarget → if (length targets) > 0 then do
-          targ ← liftEffect $ Creep.transfer creep nearestTarget resource_energy
+          targ ← transferResourceTo creep nearestTarget resource_energy
           if targ == err_not_in_range then do
-            ret ← liftEffect $ Creep.moveTo creep (TargetObj nearestTarget)
+            ret ← moveCreepTo creep (TargetObj nearestTarget)
             pure unit
           else pure unit
         else pure unit

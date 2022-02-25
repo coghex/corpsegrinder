@@ -6,14 +6,15 @@ import Control.Monad.Reader (asks)
 import Data.Maybe (Maybe(..))
 import Screeps.Memory as Memory
 import Screeps.Game   as Game
-import Memory (freeCreepMemory, clearMem)
+import Memory (freeCreepMemory)
 import Manager (manageCreeps)
 import Processor (processCreeps)
 import Preformer (preformCreeps)
 import Builder (buildRoom)
 import Spawn (initSpawn)
 import Data (LoopStatus(..))
-import CG (CG, Env, LogLevel(..), getMemField, log', runCG, setMemField)
+import CG (CG, Env, LogLevel(..), getMemField, log'
+          , runCG, setMemField, clearMem)
 
 main ∷ Effect Unit
 main = do

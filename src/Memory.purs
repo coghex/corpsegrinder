@@ -1,7 +1,6 @@
 module Memory where
 
 import UPrelude
-import Effect.Class ( liftEffect )
 import Control.Monad.Reader (asks)
 import Data.Array (uncons, head, tail)
 import Data.Argonaut.Core (Json)
@@ -45,7 +44,7 @@ freeCreepMemoryF mem creeps = do
                     Left err → log' LogError $ show err
                     Right h0 → freeSpawnNHarv t0 h0
     memory ← asks (_.memory)
-    liftEffect $ Memory.freeCreep memory creepN
+    freeCreepMem creepN
     freeCreepMemoryF mem creeps'
   where creeps' = case uncons creeps of
                     Just {head: _, tail: cs} → cs
@@ -67,8 +66,4 @@ freeSpawnNHarv destid spawnid = do
         Nothing → log' LogWarn "destination not a spawn"
         Just harvSpots → removeNHarvs harvSpots destid spawn
 
--- | clears all data, used for reset
-clearMem ∷ CG Env Unit
-clearMem = do
-  memory ← asks (_.memory)
-  liftEffect $ Memory.clear memory
+
