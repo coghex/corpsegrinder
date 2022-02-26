@@ -78,9 +78,26 @@ storeEnergy creep = do
             pure unit
           else pure unit
         else pure unit
-freeCapacity ∷ Creep → Boolean
-freeCapacity creep = case (RO.storeMaybe creep) of
+-- | returns true if creep is carrying nothing
+creepFull ∷ Creep → Boolean
+creepFull creep = case (RO.storeMaybe creep) of
   Nothing → false
   -- i dont know why i had this line like this, but it could be important
   --Just _  → (Store.getFreeCapacity (Creep.store creep)) > 0
-  Just s0 → (Store.getFreeCapacity s0) > 0
+  Just s0 → (Store.getFreeCapacity s0) ≡ 0
+-- | returns true if creep is carrying nothing
+creepEmpty ∷ Creep → Boolean
+creepEmpty creep = case (RO.storeMaybe creep) of
+  Nothing → false
+  Just s0 → (Store.getUsedCapacity s0) ≡ 0
+
+-- | returns true if creep has any enery
+creepHasEnergy ∷ Creep → Boolean
+creepHasEnergy creep = case (RO.storeMaybe creep) of
+  Nothing → false
+  Just s0 → Store.getUsedCapacity' s0 resource_energy ≠ 0
+-- | returns the energy currently held by a creep
+creepSpaceForEnergy ∷ Creep → Int
+creepSpaceForEnergy creep = case (RO.storeMaybe creep) of
+  Nothing → 0
+  Just s0 → Store.getFreeCapacity' s0 resource_energy

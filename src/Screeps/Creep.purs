@@ -149,8 +149,8 @@ transfer = runThisEffFn2 "transfer"
 -- transfer' ∷ Creep → RoomObject α → ResourceType → Int → Effect ReturnCode
 -- transfer' = runThisEffFn3 "transfer"
 -- 
--- upgradeController ∷ Creep → Controller → Effect ReturnCode
--- upgradeController = runThisEffFn1 "upgradeController"
+upgradeController ∷ Creep → Controller → Effect ReturnCode
+upgradeController = runThisEffFn1 "upgradeController"
 -- 
 -- withdraw ∷ Creep → RoomObject → ResourceType → Effect ReturnCode
 -- withdraw = runThisEffFn2 "withdraw"

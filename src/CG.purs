@@ -190,3 +190,6 @@ moveCreepTo ∷ ∀ α. Creep → TargetPosition α → CG Env ReturnCode
 moveCreepTo creep pos = liftEffect $ Creep.moveTo creep pos
 creepBuild ∷ Creep → ConstructionSite → CG Env ReturnCode
 creepBuild creep site = liftEffect $ Creep.build creep site
+creepUpgrade ∷ Creep → Controller → CG Env ReturnCode
+creepUpgrade creep controller = liftEffect
+  $ Creep.upgradeController creep controller

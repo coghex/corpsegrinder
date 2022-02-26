@@ -15,6 +15,7 @@ import Screeps.Structure.Spawn as Spawn
 import Screeps.Store as Store
 import Screeps.Const (resource_energy, pWork, pMove, pCarry)
 import Role.Harvester (preformHarvester)
+import Role.Upgrader (preformUpgrader)
 import Role.Builder (preformBuilder)
 import Data
 import CG
@@ -41,21 +42,20 @@ preformCreepsF creeps = do
 
 preformCreep ∷ Tuple String (F.Object Json) → CG Env Unit
 preformCreep (Tuple "NULL" val) = pure unit
-preformCreep (Tuple key    val) = case role of
-  RoleNULL → pure unit
-  RoleIdle → pure unit
-  RoleBuilder _ → do
-    game ← asks (_.game)
-    let creep = F.lookup key (Game.creeps game)
-    case creep of
-      Nothing → pure unit
-      Just c0 → preformBuilder c0
-  RoleHarvester → do
-    game ← asks (_.game)
-    let creep = F.lookup key (Game.creeps game)
-    case creep of
-      Nothing → pure unit
-      Just c0 → preformHarvester c0
+preformCreep (Tuple key    val) = preformRole key role
   where role = case getField val "role" of
                  Left err → RoleNULL
                  Right r0 → r0
+preformRole ∷ String → Role → CG Env Unit
+preformRole key role = do
+  game ← asks (_.game)
+  let creep = F.lookup key (Game.creeps game)
+  case creep of
+    Nothing → pure unit
+    Just c0 → preformRoleF c0 role
+preformRoleF ∷ Creep → Role → CG Env Unit
+preformRoleF creep RoleIdle        = pure unit
+preformRoleF creep RoleHarvester   = preformHarvester creep
+preformRoleF creep (RoleBuilder _) = preformBuilder   creep
+preformRoleF creep RoleUpgrader    = preformUpgrader  creep
+preformRoleF creep RoleNULL        = pure unit

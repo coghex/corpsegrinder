@@ -62,10 +62,12 @@ ctFromStr _            = Nothing
 data Role      = RoleIdle
                | RoleBuilder Int
                | RoleHarvester
+               | RoleUpgrader
                | RoleNULL
 data Job       = JobNULL
 instance showRole ∷ Show Role where
   show RoleHarvester   = "RoleHarvester"
+  show RoleUpgrader    = "RoleUpgrader"
   show (RoleBuilder n) = "RoleBuilder " <> (show n)
   show RoleIdle        = "RoleIdle"
   show RoleNULL        = "RoleNULL"
@@ -73,13 +75,13 @@ instance eqRoles ∷ Eq Role where
   eq RoleNULL        RoleNULL        = true
   eq RoleIdle        RoleIdle        = true
   eq RoleHarvester   RoleHarvester   = true
+  eq RoleUpgrader    RoleUpgrader    = true
   eq (RoleBuilder _) (RoleBuilder _) = true
-  eq _               RoleNULL        = false
-  eq RoleNULL        _               = false
   eq _               _               = false
 instance encodeRole ∷ EncodeJson Role where
   encodeJson RoleIdle        = encodeJson "RoleIdle"
   encodeJson RoleHarvester   = encodeJson "RoleHarvester"
+  encodeJson RoleUpgrader    = encodeJson "RoleUpgrader"
   encodeJson (RoleBuilder n) = encodeJson $ "RoleBuilder:" <> (show n)
   encodeJson RoleNULL        = encodeJson "RoleNULL"
 instance decodeRole ∷ DecodeJson Role where
@@ -88,6 +90,7 @@ instance decodeRole ∷ DecodeJson Role where
     note (TypeMismatch "Role") (roleFromStr string)
 roleFromStr ∷ String → Maybe Role
 roleFromStr "RoleHarvester" = Just RoleHarvester
+roleFromStr "RoleUpgrader"  = Just RoleUpgrader
 roleFromStr "RoleIdle"      = Just RoleIdle
 roleFromStr "RoleNULL"      = Just RoleNULL
 roleFromStr str             = if (length str) > 11 then
@@ -97,7 +100,7 @@ roleFromStr str             = if (length str) > 11 then
         Just s0 → Just $ RoleBuilder s0
     else Nothing
   else Nothing
-roleList = [RoleIdle, RoleHarvester, (RoleBuilder 0), RoleNULL] ∷ Array Role
+roleList = [RoleIdle, RoleHarvester, (RoleBuilder 0), RoleUpgrader, RoleNULL] ∷ Array Role
 
 data HarvestSpot = HarvestSpot { sourceName ∷ Id Source
                                , nHarvs     ∷ Int

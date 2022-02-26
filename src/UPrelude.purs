@@ -1,6 +1,6 @@
 module UPrelude
   ( module P
-  , (≡), (≠))
+  , (≡), (≠), (≤), (≥), (∧), (∨))
   where
 -- ^ i define some extra universal stuff, like more unicode
 import Prelude as P
