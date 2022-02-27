@@ -4,6 +4,9 @@ import UPrelude
 import Data.Array (index, head, zip, length)
 import Data.Tuple (Tuple(..))
 import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
+import Data.Argonaut.Core (Json)
+import Data.Argonaut.Decode (getField)
 import Screeps.Data
 import Screeps.Room ( find )
 import Screeps.RoomObject as RO
@@ -11,8 +14,9 @@ import Screeps.RoomPosition as RP
 import Screeps.Structure ( structureType )
 import Screeps.Store as Store
 import Screeps.Const ( resource_energy, find_my_construction_sites)
+import Foreign.Object as F
 import Maths (distance, findMin)
-import Data (HarvestSpot(..), Spot(..))
+import Data (HarvestSpot(..), Spot(..), Role(..))
 import CG
 
 -- | basic functino to find nearest object of type
@@ -96,3 +100,18 @@ isStorable _         _                   = false
 -- | find constructions sites for a spawn
 findCS ∷ ∀ α. Array Spawn → Array Int
 findCS = map (\s → length (find (RO.room s) find_my_construction_sites))
+
+-- | returns true if the creep is a harvesting type
+iHarvest ∷ F.Object Role → String → Creep → Boolean
+iHarvest roles key _ = case (F.lookup key roles) of
+  Nothing → false
+  Just v0 → case v0 of
+              RoleHarvester → true
+              RoleUpgrader  → true
+              _             → false
+
+-- | returns array of roles given creep array
+makeRoleArray ∷ String → F.Object Json → Role
+makeRoleArray _ val = case (getField val "role") of
+  Left  _  → RoleNULL
+  Right r0 → r0

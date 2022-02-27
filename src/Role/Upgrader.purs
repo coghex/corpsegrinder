@@ -30,15 +30,16 @@ preformUpgraderF creep mem = do
       preformUpgraderFF creep false
     Right building → preformUpgraderFF creep building
 preformUpgraderFF ∷ Creep → Boolean → CG Env Unit
-preformUpgraderFF creep upgrading = do
-  if creepEmpty creep then setCreepMem creep "upgrading" false
-  else if creepFull creep then setCreepMem creep "upgrading" true
-  else pure unit
-  if creepHasEnergy creep then do
-    let controller = Room.controller (RO.room creep)
-    res ← creepUpgrade creep controller
-    if (res ≡ err_not_in_range) then do
-      ret ← moveCreepTo creep (TargetObj controller)
-      pure unit
+preformUpgraderFF creep upgrading =
+  if upgrading then do
+    if creepEmpty creep then setCreepMem creep "upgrading" false
+    else if creepHasEnergy creep then do
+      let controller = Room.controller (RO.room creep)
+      res ← creepUpgrade creep controller
+      if (res ≡ err_not_in_range) then do
+        ret ← moveCreepTo creep (TargetObj controller)
+        pure unit
+      else pure unit
     else pure unit
+  else if creepFull creep then setCreepMem creep "upgrading" true
   else getEnergy creep

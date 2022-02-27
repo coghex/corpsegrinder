@@ -17,6 +17,7 @@ import Screeps.RoomObject as RO
 import Screeps.Const (resource_energy, pWork, pMove, pCarry)
 import Data
 import CG
+import Util (iHarvest, makeRoleArray)
 
 -- | creeps are created here
 manageCreeps ∷ CG Env Unit
@@ -32,13 +33,23 @@ manageCreeps = do
     Just s1 → case rcl of
       1 → do
         nMaxCreeps ← calcMaxCreeps 1 s1
-        if availableEnergy > 250 && numCreeps < nMaxCreeps then do
+        creepMem   ← getMemField "creeps"
+        let numCreeps = case creepMem of
+              Nothing → 1
+              -- we only want to count creeps harvesting in the harvestSpot count
+              Just m0 → F.size $ F.filterWithKey (iHarvest memArray) creeps
+                where memArray = F.mapWithKey (makeRoleArray) m0
+        -- ≤ means nMaxCreeps + 1, since we allow one over the limit
+        if availableEnergy > 250 && numCreeps ≤ nMaxCreeps then do
                     log' LogDebug "creating level 1 creep..."
                     createCreep s1 1
                   else pure unit
           where availableEnergy = Store.getUsedCapacity' spawnStore resource_energy
                 spawnStore      = Spawn.store            s1
-                numCreeps       = F.size                 creeps
+      2 → do
+--        nMaxCreeps ← calcMaxCreeps 2 s1
+--        creepMem   ← getMemField "creeps"
+        pure unit
       _ → pure unit
       where room1           = RO.room                s1
             controller1     = Room.controller        room1
@@ -47,6 +58,11 @@ manageCreeps = do
 -- | finds the maximum number of creeps at different levels
 calcMaxCreeps ∷ Int → Spawn → CG Env Int
 calcMaxCreeps 1 spawn = do
+  ret ← getSpawnMem spawn "harvestSpots"
+  case ret of
+    Nothing → pure 0
+    Just h0 → pure $ foldr (addHarvestSpots) 0 h0
+calcMaxCreeps 2 spawn = do
   ret ← getSpawnMem spawn "harvestSpots"
   case ret of
     Nothing → pure 0
