@@ -2,6 +2,7 @@ module Util where
 
 import UPrelude
 import Data.Array (index, head, zip, length)
+import Data.Int (quot)
 import Data.Tuple (Tuple(..))
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
@@ -11,7 +12,7 @@ import Screeps.Data
 import Screeps.Room ( find )
 import Screeps.RoomObject as RO
 import Screeps.RoomPosition as RP
-import Screeps.Structure ( structureType )
+import Screeps.Structure ( structureType, hits, hitsMax )
 import Screeps.ConstructionSite as CS
 import Screeps.Store as Store
 import Screeps.Const ( resource_energy, find_my_construction_sites)
@@ -44,14 +45,12 @@ findNearestOpenSource harvData arr pos0 = index arr ind
         y0     = RP.y pos0
 findSourceDistance ∷ Int → Int → Tuple HarvestSpot Source → Int
 findSourceDistance x0 y0 (Tuple spot source) = if avail then distance x2 y2 x0 y0
-                                               -- TODO: figure out the optimal value
-                                               --       for when we can begin doubling
-                                               --       up on creeps
-                                               else 1000000
+                                               else harvsOver * 1000000
   where pos1      = RO.pos source
         x1        = RP.x   pos1
         y1        = RP.y   pos1
         (HarvestSpot {sourceName, nHarvs, nMaxHarvs, harvSpots}) = spot
+        harvsOver = nHarvs - nMaxHarvs + 1
         x2     = case (head (harvSpots)) of
                    Nothing → 1000000
                    Just (Spot {spotType, spotX, spotY}) → spotX
@@ -101,11 +100,16 @@ structIsType stype struct = (structureType struct) ≡ stype
 siteIsType ∷ StructureType → ConstructionSite → Boolean
 siteIsType stype site = (CS.structureType site) ≡ stype
 
+-- | true if structure has a store
 isStorable ∷ ∀ α. Structure α → StructureType → Boolean
 isStorable structure structure_spawn     = true
 isStorable structure structure_tower     = true
 isStorable structure structure_extension = true
 isStorable _         _                   = false
+
+-- | true if structure needs repair, we start here at 50% hits
+needsRepair ∷ ∀ α. Structure α → Boolean
+needsRepair struct = (hits struct) < ((hitsMax struct) `quot` 2)
 
 -- | find constructions sites for a spawn
 findCS ∷ Array Spawn → Array Int
@@ -118,6 +122,7 @@ iHarvest roles key _ = case (F.lookup key roles) of
   Just v0 → case v0 of
               RoleHarvester → true
               RoleUpgrader  → true
+              RoleBuilder n → true
               _             → false
 
 -- | returns array of roles given creep array

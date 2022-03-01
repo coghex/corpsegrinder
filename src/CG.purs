@@ -203,6 +203,9 @@ creepBuild creep site = liftEffect $ Creep.build creep site
 creepUpgrade ∷ Creep → Controller → CG Env ReturnCode
 creepUpgrade creep controller = liftEffect
   $ Creep.upgradeController creep controller
+creepRepair ∷ ∀ α. Creep → Structure α → CG Env ReturnCode
+creepRepair creep struct = liftEffect
+  $ Creep.repair creep struct
 
 -- room functions
 createConstructionSite ∷ ∀ α. Room → TargetPosition α → StructureType → CG Env Unit

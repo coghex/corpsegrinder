@@ -77,10 +77,10 @@ buildRoom = do
               let maxContainers = case harvestSpots' of
                                     Nothing → 0
                                     Just h0 → length (h0 ∷ Array HarvestSpot)
+              -- else if, or else it might overbuild
               if nContainers < maxContainers then
                 buildContainer nContainers s1
-              else pure unit
-              if nExtensions < 5 then
+              else if nExtensions < 5 then
                 buildExtension nExtensions s1
               else pure unit
             else pure unit
