@@ -38,10 +38,6 @@ processCreeps time = do
                                                utl0 numCS energyNeed
                                                roleList' creeps creep0
                                                c0) creep0 creeps
---      newCreeps = F.mapWithKey (processCreep
---                    utl0 numCS (energyNeed)
---                    roleList' creeps)
---                    creeps
       -- TODO: this currently retreives global value, it should be per creep
       --       since creeps will eventually need to be all over the map
       numCS = foldr (+) 0 $ findCS $ F.values spawns
@@ -68,10 +64,13 @@ processCreep utl0 numCS energyNeed roles creeps key creep0 = creep3
         ind     = findInd roles alt 0
         alt     = bestRole scores roles 0 RoleNULL
         newRole = Just $ encodeJson alt
-        scores  = map (calcRoleScore energyNeed creeps role0) roles
+        scores  = map (calcRoleScore creepU0 energyNeed creeps role0) roles
         role0   = case getField' creep0 "role" of
                     Nothing → RoleNULL
                     Just r0 → r0
+        creepU0 = case getField' creep0 "utility" of
+                    Nothing → 0
+                    Just u0 → u0
 
 -- | helps translate a creep to a new role
 --   , usually will fail so it doesnt error
@@ -123,29 +122,33 @@ bestRole scores roles score role = if (score' > score) then bestRole scores' rol
                      Just {head: s, tail: _}  → s
                      Nothing → 0
 
--- | finds the score for a given role for all the creeps at once
-calcRoleScore ∷ Int → F.Object (F.Object Json) → Role → Role → Int
-calcRoleScore _          _      _     RoleNULL        = 0
-calcRoleScore _          _      _     RoleIdle        = 1
-calcRoleScore energyNeed creeps role0 RoleUpgrader    = score
+-- | finds the score for a given role for a given creep, averages with current score
+calcRoleScore ∷ Int → Int → F.Object (F.Object Json) → Role → Role → Int
+calcRoleScore _    _          _      _     RoleNULL        = 0
+calcRoleScore _    _          _      _     RoleIdle        = 1
+calcRoleScore utl0 energyNeed creeps role0 RoleUpgrader    = avgScores utl0 score
   where score     = 1000 `quot` (upgraders + 1)
         upgraders = iDoThat + numberOfRole RoleUpgrader creeps
         iDoThat   = case role0 of
                       RoleUpgrader → -1
                       _            → 0
-calcRoleScore energyNeed creeps role0 (RoleBuilder n) = score
+calcRoleScore utl0 energyNeed creeps role0 (RoleBuilder n) = avgScores utl0 score
   where score    = (2*n) * (400 `quot` (builders + 1))
         builders = iDoThat + numberOfRole (RoleBuilder n) creeps
         iDoThat  = case role0 of
                      RoleBuilder _ → -1
                      _             → 0
-calcRoleScore energyNeed creeps role0 RoleHarvester = score
+calcRoleScore utl0 energyNeed creeps role0 RoleHarvester = avgScores utl0 score
   where score   = (5*energyNeed + 800) `quot` ((10*harvs) + 1)
 
         harvs   = iDoThat + numberOfRole RoleHarvester creeps
         iDoThat = case role0 of
                     RoleHarvester → -1
                     _             → 0
+
+-- | weighted average of old utility and new utility
+avgScores ∷ Int → Int → Int
+avgScores a b = (a + b) `quot` 2
 
 numberOfRole ∷ Role → F.Object (F.Object Json) → Int
 numberOfRole role creeps = F.size $ F.filter (roleFilter role) creeps

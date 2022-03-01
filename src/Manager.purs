@@ -40,7 +40,7 @@ manageCreeps = do
               Just m0 → F.size $ F.filterWithKey (iHarvest memArray) creeps
                 where memArray = F.mapWithKey (makeRoleArray) m0
         -- ≤ means nMaxCreeps + 1, since we allow one over the limit
-        if availableEnergy > 250 && numCreeps ≤ nMaxCreeps then do
+        if availableEnergy > 250 && numCreeps < nMaxCreeps then do
                     log' LogDebug "creating level 1 creep..."
                     createCreep s1 1
                   else pure unit
@@ -55,7 +55,7 @@ manageCreeps = do
               Just m0 → F.size $ F.filterWithKey (iHarvest memArray) creeps
                 where memArray = F.mapWithKey (makeRoleArray) m0
         -- ≤ means nMaxCreeps + 1, since we allow one over the limit
-        if availableEnergy > 250 && numCreeps ≤ nMaxCreeps then do
+        if availableEnergy > 250 && numCreeps < nMaxCreeps then do
                     log' LogDebug "creating level 2 creep..."
                     createCreep s1 2
                   else pure unit
