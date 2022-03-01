@@ -20,7 +20,8 @@ import Screeps.Source as Source
 import Screeps.Structure ( structureType )
 import Foreign.Object as F
 import Util (findNearest, findNearestOpenSource, setNHarvs, removeNHarvs)
-import Creep.Peon (getEnergy, creepSpaceForEnergy, creepFull)
+import Creep.Peon (getEnergy, creepSpaceForEnergy, creepFull
+                  , creepEmpty, creepHasEnergy)
 import CG
 
 -- | a builder moves between mining for energy and building construction sites
@@ -41,20 +42,21 @@ preformBuilderF creep mem = do
     -- if we are already a builder this will be set already
     Right building → preformBuilderFF creep building
 preformBuilderFF ∷ Creep → Boolean → CG Env Unit
-preformBuilderFF creep building = if building then do
-    if creepSpaceForEnergy creep ≤ 0 then do
+preformBuilderFF creep building =
+  if building then do
+    if creepEmpty creep then do
       setCreepMem creep "building" false
-    else if creepFull creep then do
-      setCreepMem creep "building" true
-    else pure unit
-    let targets = find (RO.room creep) find_construction_sites
-    case (findNearest targets (RO.pos creep)) of
-      Nothing → pure unit
-      Just nearestTarget → if (length targets > 0) then do
-        res ← creepBuild creep nearestTarget
-        if (res ≡ err_not_in_range) then do
-          ret ← moveCreepTo creep (TargetObj nearestTarget)
-          pure unit
+    else if creepHasEnergy creep then do
+      let targets = find (RO.room creep) find_construction_sites
+      case (findNearest targets (RO.pos creep)) of
+        Nothing → pure unit
+        Just nearestTarget → if (length targets > 0) then do
+          res ← creepBuild creep nearestTarget
+          if (res ≡ err_not_in_range) then do
+            ret ← moveCreepTo creep (TargetObj nearestTarget)
+            pure unit
+          else pure unit
         else pure unit
-   else pure unit
+    else pure unit
+  else if creepFull creep then setCreepMem creep "building" true
   else getEnergy creep

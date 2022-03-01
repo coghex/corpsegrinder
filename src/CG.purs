@@ -14,15 +14,19 @@ import Data.Time as Time
 import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Data.Enum (fromEnum)
+import Data.Argonaut.Core (Json)
 import Data.Argonaut.Encode (class EncodeJson)
-import Data.Argonaut.Decode (class DecodeJson
+import Data.Argonaut.Decode (class DecodeJson, getField
                             , printJsonDecodeError
                             , JsonDecodeError)
 import Screeps.Memory as Memory
 import Screeps.Game   as Game
+import Screeps.Room   as Room
+import Screeps.RoomObject as RO
 import Screeps.Creep  as Creep
 import Screeps.Const
 import Screeps.Structure.Spawn as Spawn
+import Foreign.Object as F
 import Control.Monad.Error.Class (class MonadError)
 import Control.Monad.Reader.Class (class MonadAsk, class MonadReader)
 import Control.Monad.Trans.Class (class MonadTrans, lift)
@@ -110,6 +114,12 @@ format dt@(DT.DateTime d t) = (show $ fromEnum day)   <> "/"
 log' ∷ LogLevel → String → CG Env Unit
 log' lvl str = liftEffect nowDateTime >>= logIO <<< { level: lvl, time: _, msg: str }
 
+-- this is a simple translation so that we can automatically ignore errors
+getField' ∷ ∀ α. DecodeJson α ⇒ F.Object Json → String → Maybe α
+getField' obj key = case getField obj key of
+                      Left  _ → Nothing
+                      Right v → Just v
+
 -- gets a memory field, decodes json into maybe structure
 getMemField ∷ ∀ α. (DecodeJson α) ⇒ String → CG Env (Maybe α)
 getMemField field = do
@@ -193,3 +203,11 @@ creepBuild creep site = liftEffect $ Creep.build creep site
 creepUpgrade ∷ Creep → Controller → CG Env ReturnCode
 creepUpgrade creep controller = liftEffect
   $ Creep.upgradeController creep controller
+
+-- room functions
+createConstructionSite ∷ ∀ α. Room → TargetPosition α → StructureType → CG Env Unit
+createConstructionSite room pos stype = do
+  ret ← liftEffect $ Room.createConstructionSite room pos structure_container
+  if ret ≡ ok then
+    log' LogInfo $ "creating structure: " <> (show structure_container)
+  else log' LogError $ "buildContainer error: " <> (show ret)

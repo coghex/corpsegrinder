@@ -12,6 +12,7 @@ import Screeps.Room ( find )
 import Screeps.RoomObject as RO
 import Screeps.RoomPosition as RP
 import Screeps.Structure ( structureType )
+import Screeps.ConstructionSite as CS
 import Screeps.Store as Store
 import Screeps.Const ( resource_energy, find_my_construction_sites)
 import Foreign.Object as F
@@ -84,21 +85,30 @@ removeNHarvsF sourceId (HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots }
               , nMaxHarvs:  nMaxHarvs,  harvSpots: harvSpots }
   where n = if (sourceId ≡ sourceName) then 1 else 0
 
-hasFreeSpace ∷ ∀ a. Structure a → Boolean
+hasFreeSpace ∷ ∀ α. Structure α → Boolean
 hasFreeSpace structure
   =  (isStorable structure (structureType structure))
   && (spawnStoreCapacity > 0)
   where spawnStoreCapacity = case (RO.storeMaybe structure) of
                                Nothing → 0
                                Just s0 → Store.getFreeCapacity' s0 resource_energy
-isStorable ∷ ∀ a. Structure a → StructureType → Boolean
+
+-- | boolean for the find' function, returns true if struct is of type
+structIsType ∷ ∀ α. StructureType → Structure α → Boolean
+structIsType stype struct = (structureType struct) ≡ stype
+  
+-- | boolean for the find' function, returns true if site is of type
+siteIsType ∷ StructureType → ConstructionSite → Boolean
+siteIsType stype site = (CS.structureType site) ≡ stype
+
+isStorable ∷ ∀ α. Structure α → StructureType → Boolean
 isStorable structure structure_spawn     = true
 isStorable structure structure_tower     = true
 isStorable structure structure_extension = true
 isStorable _         _                   = false
 
 -- | find constructions sites for a spawn
-findCS ∷ ∀ α. Array Spawn → Array Int
+findCS ∷ Array Spawn → Array Int
 findCS = map (\s → length (find (RO.room s) find_my_construction_sites))
 
 -- | returns true if the creep is a harvesting type
