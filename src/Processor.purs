@@ -20,18 +20,28 @@ import Data
 import CG
 
 -- | creeps change their roles here
-processCreeps ∷ CG Env Unit
-processCreeps = do
+processCreeps ∷ Int → CG Env Unit
+processCreeps time = do
   game ← asks (_.game)
   creeps' ← getMemField "creeps"
   let creeps = case creeps' of
                  Nothing → F.empty
                  Just c0 → c0
-      utl0 = F.fold addUpUtils 0 creeps
-      newCreeps = F.mapWithKey (processCreep
-                    utl0 numCS (energyNeed)
-                    roleList' creeps)
-                    creeps
+      creepSkip = time `mod` (F.size creeps)
+      creep0    = case (F.keys creeps) `index` creepSkip of
+                    Nothing → "noname"
+                    Just n0 → n0
+  let utl0 = F.fold addUpUtils 0 creeps
+      newCreeps = case (F.lookup creep0 creeps) of
+                    Nothing → creeps
+                    Just c0 → F.update (\c → Just $ processCreep
+                                               utl0 numCS energyNeed
+                                               roleList' creeps creep0
+                                               c0) creep0 creeps
+--      newCreeps = F.mapWithKey (processCreep
+--                    utl0 numCS (energyNeed)
+--                    roleList' creeps)
+--                    creeps
       -- TODO: this currently retreives global value, it should be per creep
       --       since creeps will eventually need to be all over the map
       numCS = foldr (+) 0 $ findCS $ F.values spawns

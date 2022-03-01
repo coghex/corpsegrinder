@@ -42,9 +42,10 @@ runCorpsegrinder LoopGo          = do
   case modT of
     0 → freeCreepMemory
     3 → manageCreeps
-    6 → processCreeps
+--    6 → processCreeps
     9 → buildRoom
     _ → pure unit
+  processCreeps time
   preformCreeps
 runCorpsegrinder LoopReset       = do
   log' LogInfo $ "resetting the corpsegrinder..."
