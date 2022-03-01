@@ -130,7 +130,7 @@ calcRoleScore energyNeed creeps role0 (RoleBuilder n) = score
                      RoleBuilder _ → -1
                      _             → 0
 calcRoleScore energyNeed creeps role0 RoleHarvester = score
-  where score   = (10*energyNeed + 500) `quot` ((10*harvs) + 1)
+  where score   = (5*energyNeed + 800) `quot` ((10*harvs) + 1)
 
         harvs   = iDoThat + numberOfRole RoleHarvester creeps
         iDoThat = case role0 of
