@@ -4,7 +4,7 @@ import UPrelude
 import Data.Array (foldr)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Control.Monad.Reader (ask)
+import Control.Monad.Reader (asks)
 import Screeps.Data
 import Foreign.Object as F
 import Screeps.Game as Game
@@ -18,11 +18,26 @@ import Screeps.Const (resource_energy, pWork, pMove, pCarry)
 import Data
 import CG
 import Util (iHarvest, makeRoleArray)
+import Job.Repair (manageRepairJobs)
+
+-- | jobs are created here
+manageJobs ∷ CG Env Unit
+manageJobs = do
+  game ← asks (_.game)
+  let spawnslist      = Game.spawns      game
+      creeps          = Game.creeps      game
+      gcl             = Game.gcl         game
+      spawn1          = F.lookup "Spawn1" spawnslist
+  case spawn1 of
+    -- there is no spawn yet, so just repeat this check here
+    Nothing → setMemField "loopStatus" LoopStart
+    Just s1 → do
+      manageRepairJobs s1
 
 -- | creeps are created here
 manageCreeps ∷ CG Env Unit
 manageCreeps = do
-  {memory:memory, game:game} ← ask
+  game ← asks (_.game)
   let spawnslist      = Game.spawns      game
       creeps          = Game.creeps      game
       gcl             = Game.gcl         game

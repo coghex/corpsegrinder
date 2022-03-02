@@ -53,7 +53,9 @@ processCreeps time = do
   setMemField "utility" utl0
 processCreep ∷ Int → Int → Int → Array Role → F.Object (F.Object Json)
   → String → F.Object Json → F.Object Json
-processCreep utl0 numCS energyNeed roles creeps key creep0 = creep3
+processCreep utl0 numCS energyNeed roles creeps key creep0 =
+  if isBusy then creep0
+  else creep3
   where creep3  = F.update (\_ → newUtl)  "utility"  creep2
         creep2  = F.update (\_ → newRole) "role"     creep1
         creep1  = switchRole creep0 alt
@@ -65,12 +67,24 @@ processCreep utl0 numCS energyNeed roles creeps key creep0 = creep3
         alt     = bestRole scores roles 0 RoleNULL
         newRole = Just $ encodeJson alt
         scores  = map (calcRoleScore creepU0 energyNeed creeps role0) roles
+        upgrading  = getField' creep0 "upgrading"
+        building   = getField' creep0 "building"
+        repairing  = getField' creep0 "repairing"
+        isBusy     = findIfBusy upgrading building repairing
+        findIfBusy ∷ Maybe Boolean → Maybe Boolean → Maybe Boolean → Boolean
+        findIfBusy Nothing  Nothing  Nothing  = false
+        findIfBusy (Just v) Nothing  Nothing  = not v
+        findIfBusy Nothing  (Just v) Nothing  = not v
+        findIfBusy Nothing  Nothing  (Just v) = not v
+        -- if we get to this last case we fucked up
+        findIfBusy _        _        _        = false
         role0   = case getField' creep0 "role" of
                     Nothing → RoleNULL
                     Just r0 → r0
         creepU0 = case getField' creep0 "utility" of
                     Nothing → 0
                     Just u0 → u0
+
 
 -- | helps translate a creep to a new role
 --   , usually will fail so it doesnt error
@@ -138,6 +152,7 @@ calcRoleScore utl0 energyNeed creeps role0 (RoleBuilder n) = avgScores utl0 scor
         iDoThat  = case role0 of
                      RoleBuilder _ → -1
                      _             → 0
+calcRoleScore utl0 energyNeed creeps role0 (RoleWorker j) = 0
 calcRoleScore utl0 energyNeed creeps role0 RoleHarvester = avgScores utl0 score
   where score   = (5*energyNeed + 800) `quot` ((10*harvs) + 1)
 

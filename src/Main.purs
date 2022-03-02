@@ -7,7 +7,7 @@ import Data.Maybe (Maybe(..))
 import Screeps.Memory as Memory
 import Screeps.Game   as Game
 import Memory (freeCreepMemory)
-import Manager (manageCreeps)
+import Manager (manageCreeps, manageJobs)
 import Processor (processCreeps)
 import Preformer (preformCreeps)
 import Builder (buildRoom)
@@ -40,12 +40,17 @@ runCorpsegrinder LoopGo          = do
       modT = time `mod` 12
   -- the following functions will get called once every 12 ticks
   case modT of
+    -- free memory associated with dead creeps
     0 → freeCreepMemory
+    -- create new creeps, manage creep limit
     3 → manageCreeps
---    6 → processCreeps
+    -- create new jobs, place them in job pool
+    6 → manageJobs
+    -- create new construction sites, based on rcl
     9 → buildRoom
-    _ → pure unit
-  processCreeps time
+    -- change creep role one per tick
+    _ → processCreeps time
+  -- preform actions for every creep
   preformCreeps
 runCorpsegrinder LoopReset       = do
   log' LogInfo $ "resetting the corpsegrinder..."

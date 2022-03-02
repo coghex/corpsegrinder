@@ -214,3 +214,10 @@ createConstructionSite room pos stype = do
   if ret ≡ ok then
     log' LogInfo $ "creating structure: " <> (show structure_container)
   else log' LogError $ "buildContainer error: " <> (show ret)
+
+
+-- game functions
+getObjectById' ∷ ∀ α. Id α → CG Env (Maybe α)
+getObjectById' id = do
+  game ← asks (_.game)
+  pure $ Game.getObjectById game id

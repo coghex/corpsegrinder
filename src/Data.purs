@@ -59,16 +59,39 @@ ctFromStr "creepGrunt" = Just CreepGrunt
 ctFromStr "creepNULL"  = Just CreepNULL
 ctFromStr _            = Nothing
 
+data Job       = JobNULL | JobRepair String
+instance showJob ∷ Show Job where
+  show JobNULL       = "JobNULL"
+  show (JobRepair n) = "JobRepair:" <> (show n)
+instance eqJob ∷ Eq Job where
+  eq JobNULL       JobNULL       = true
+  eq (JobRepair _) (JobRepair _) = true
+  eq _             _             = false
+instance encodeJob ∷ EncodeJson Job where
+  encodeJson JobNULL       = encodeJson "JobNULL"
+  encodeJson (JobRepair n) = encodeJson $ "JobRepair:" <> (show n)
+instance decodeJob ∷ DecodeJson Job where
+  decodeJson json = do
+    string ← decodeJson json
+    note (TypeMismatch "Job") (jobFromStr string)
+jobFromStr ∷ String → Maybe Job
+jobFromStr "JobNULL" = Just JobNULL
+jobFromStr str       = if (length str) > 9 then
+    if (take 9 str) ≡ "JobRepair" then Just $ JobRepair $ drop 10 str
+    else Nothing
+  else Nothing
+
 data Role      = RoleIdle
                | RoleBuilder Int
                | RoleHarvester
                | RoleUpgrader
+               | RoleWorker Job
                | RoleNULL
-data Job       = JobNULL
 instance showRole ∷ Show Role where
   show RoleHarvester   = "RoleHarvester"
   show RoleUpgrader    = "RoleUpgrader"
   show (RoleBuilder n) = "RoleBuilder " <> (show n)
+  show (RoleWorker _)  = "RoleWorker"
   show RoleIdle        = "RoleIdle"
   show RoleNULL        = "RoleNULL"
 instance eqRoles ∷ Eq Role where
@@ -76,6 +99,7 @@ instance eqRoles ∷ Eq Role where
   eq RoleIdle        RoleIdle        = true
   eq RoleHarvester   RoleHarvester   = true
   eq RoleUpgrader    RoleUpgrader    = true
+  eq (RoleWorker _)  (RoleWorker _)  = true
   eq (RoleBuilder _) (RoleBuilder _) = true
   eq _               _               = false
 instance encodeRole ∷ EncodeJson Role where
@@ -83,6 +107,7 @@ instance encodeRole ∷ EncodeJson Role where
   encodeJson RoleHarvester   = encodeJson "RoleHarvester"
   encodeJson RoleUpgrader    = encodeJson "RoleUpgrader"
   encodeJson (RoleBuilder n) = encodeJson $ "RoleBuilder:" <> (show n)
+  encodeJson (RoleWorker n)  = encodeJson $ "RoleWorker:" <> (show n)
   encodeJson RoleNULL        = encodeJson "RoleNULL"
 instance decodeRole ∷ DecodeJson Role where
   decodeJson json = do
@@ -98,9 +123,15 @@ roleFromStr str             = if (length str) > 11 then
       case (fromString (drop 12 str)) of
         Nothing → Nothing
         Just s0 → Just $ RoleBuilder s0
+    else if (take 10 str) ≡ "RoleWorker" then
+      case (take 9 (drop 11 str)) of
+        "JobRepair" → Just $ RoleWorker $ JobRepair $ drop 21 str
+        _           → Just $ RoleWorker JobNULL
     else Nothing
   else Nothing
-roleList = [RoleIdle, RoleHarvester, (RoleBuilder 0), RoleUpgrader, RoleNULL] ∷ Array Role
+
+roleList = [RoleIdle, RoleHarvester, (RoleBuilder 0), (RoleWorker JobNULL)
+           , RoleUpgrader, RoleNULL] ∷ Array Role
 
 data HarvestSpot = HarvestSpot { sourceName ∷ Id Source
                                , nHarvs     ∷ Int

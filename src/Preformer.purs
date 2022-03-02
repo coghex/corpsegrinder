@@ -17,6 +17,7 @@ import Screeps.Const (resource_energy, pWork, pMove, pCarry)
 import Role.Harvester (preformHarvester)
 import Role.Upgrader (preformUpgrader)
 import Role.Builder (preformBuilder)
+import Role.Worker (preformWorker)
 import Data
 import CG
 
@@ -56,6 +57,7 @@ preformRole key role = do
 preformRoleF ∷ Creep → Role → CG Env Unit
 preformRoleF creep RoleIdle        = pure unit
 preformRoleF creep RoleHarvester   = preformHarvester creep
+preformRoleF creep (RoleWorker j)  = preformWorker    creep j
 preformRoleF creep (RoleBuilder _) = preformBuilder   creep
 preformRoleF creep RoleUpgrader    = preformUpgrader  creep
 preformRoleF creep RoleNULL        = pure unit

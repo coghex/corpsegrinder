@@ -122,7 +122,8 @@ iHarvest roles key _ = case (F.lookup key roles) of
   Just v0 → case v0 of
               RoleHarvester → true
               RoleUpgrader  → true
-              RoleBuilder n → true
+              RoleBuilder _ → true
+              RoleWorker  _ → true
               _             → false
 
 -- | returns array of roles given creep array

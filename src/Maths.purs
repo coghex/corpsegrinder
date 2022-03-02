@@ -3,7 +3,7 @@ module Maths where
 import UPrelude
 import Math (sqrt)
 import Data.Maybe (Maybe(..))
-import Data.Array (uncons, length, reverse
+import Data.Array (uncons, length, reverse, elem
                   , head, tail, drop, take)
 import Data.Int(round, toNumber, quot)
 
@@ -66,3 +66,16 @@ mergeArrays front back = f <> b <> mergeArrays front' back'
                   Just {head:_, tail:b1} → b1
                   Nothing                → []
 
+
+-- | removes one array from another
+subtractSet ∷ ∀ α. (Eq α) ⇒ Array α → Array α → Array α
+subtractSet [] [] = []
+subtractSet [] b  = []
+subtractSet a  [] = a
+subtractSet a  b  = val <> subtractSet a' b
+  where val = case uncons a of
+                Nothing              → []
+                Just {head:h,tail:_} → if (h `elem` b) then [] else [h]
+        a'  = case uncons a of
+                Nothing              → []
+                Just {head:_,tail:t} → t
