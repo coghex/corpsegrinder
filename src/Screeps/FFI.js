@@ -144,6 +144,11 @@ exports.runThisFn3 = function(key){
     }
   }
 }
+
+exports.consoleClear = function(){
+    console.log("<script>angular.element(document.getElementsByClassName('fa fa-trash ng-scope')[0].parentNode).scope().Console.clear()</script>");
+}
+
 exports.null = null;
 exports.undefined = undefined
 exports.notNullOrUndefined = function(x){

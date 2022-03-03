@@ -14,7 +14,7 @@ import Screeps.Structure.Controller as Controller
 import Screeps.Store as Store
 import Screeps.Room as Room
 import Screeps.RoomObject as RO
-import Screeps.Const ( resource_energy, find_my_structures
+import Screeps.Const ( resource_energy, find_structures, find_sources
                      , structure_container, pWork, pMove, pCarry, pAttack)
 import Data
 import CG
@@ -51,7 +51,8 @@ manageCreeps = do
       let room1           = RO.room                s1
           controller1     = Room.controller        room1
           rcl             = Controller.level       controller1
-      CreepCounts {nPeon,nCollier,nHauler,nGrunt} ← calcMaxCreeps 1 s1
+          numSources      = length $ Room.find room1 find_sources
+      CreepCounts {nPeon,nCollier,nHauler,nGrunt} ← calcMaxCreeps numSources s1
       creepMem   ← getMemField "creeps"
       let nMaxCreeps = nPeon + nCollier + nHauler + nGrunt
           numPeons = case creepMem of
@@ -87,33 +88,21 @@ manageCreeps = do
 
 -- | finds the maximum number of creeps at different levels
 calcMaxCreeps ∷ Int → Spawn → CG Env CreepCounts
-calcMaxCreeps 1 spawn = do
+calcMaxCreeps n spawn = do
   ret ← getSpawnMem spawn "harvestSpots"
   case ret of
     Nothing → pure $ CreepCounts { nPeon: 0, nCollier: 0, nHauler: 0, nGrunt: 0 }
-    Just h0 → pure $ CreepCounts { nPeon: maxPeon
-                                 , nCollier: maxCollier
-                                 , nHauler: maxCollier
-                                 , nGrunt: 0 }
-                where maxPeon    = maxHarvs - maxCollier
+    Just h0 → do
+      pure $ CreepCounts { nPeon: maxPeon
+                         , nCollier: maxCollier
+                         , nHauler: if (maxCollier > 0) then 1 else 0
+                         , nGrunt: 0 }
+                where maxPeon    = maxHarvs - maxCollier + n
                       maxHarvs   = foldr (addHarvestSpots) 0 h0
                       maxCollier = length containers
-                      containers = Room.find' (RO.room spawn) find_my_structures
+                      -- TODO: figure out why find_my_structures doesnt work
+                      containers = Room.find' (RO.room spawn) find_structures
                                      $ structIsType structure_container
-calcMaxCreeps 2 spawn = do
-  ret ← getSpawnMem spawn "harvestSpots"
-  case ret of
-    Nothing → pure $ CreepCounts { nPeon: 0, nCollier: 0, nHauler: 0, nGrunt: 0 }
-    Just h0 → pure $ CreepCounts { nPeon: maxPeon
-                                 , nCollier: maxCollier
-                                 , nHauler: maxCollier
-                                 , nGrunt: 0 }
-                where maxPeon    = maxHarvs - maxCollier
-                      maxHarvs   = foldr (addHarvestSpots) 0 h0
-                      maxCollier = length containers
-                      containers = Room.find' (RO.room spawn) find_my_structures
-                                     $ structIsType structure_container
-calcMaxCreeps _ _     = pure $ CreepCounts { nPeon: 0, nCollier: 0, nHauler: 0, nGrunt: 0 }
 addHarvestSpots ∷ HarvestSpot → Int → Int
 addHarvestSpots (HarvestSpot {sourceName, nHarvs, nMaxHarvs, harvSpots}) n
   = n + nMaxHarvs

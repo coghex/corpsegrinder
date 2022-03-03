@@ -26,7 +26,7 @@ import Screeps.RoomObject as RO
 import Screeps.Creep  as Creep
 import Screeps.Const
 import Screeps.Structure.Spawn as Spawn
-import Screeps.FFI (unsafeDeleteFieldEff)
+import Screeps.FFI as FFI
 import Foreign.Object as F
 import Control.Monad.Error.Class (class MonadError)
 import Control.Monad.Reader.Class (class MonadAsk, class MonadReader)
@@ -111,17 +111,21 @@ format dt@(DT.DateTime d t) = (show $ fromEnum day)   <> "/"
         min   = Time.minute t
         sec   = Time.second t
 
--- base logging function
+-- | base logging function
 log' ∷ LogLevel → String → CG Env Unit
 log' lvl str = liftEffect nowDateTime >>= logIO <<< { level: lvl, time: _, msg: str }
 
--- this is a simple translation so that we can automatically ignore errors
+-- | clears the console
+consoleClear ∷ CG Env Unit
+consoleClear = liftEffect FFI.consoleClear
+
+-- | this is a simple translation so that we can automatically ignore errors
 getField' ∷ ∀ α. DecodeJson α ⇒ F.Object Json → String → Maybe α
 getField' obj key = case getField obj key of
                       Left  _ → Nothing
                       Right v → Just v
 
--- gets a memory field, decodes json into maybe structure
+-- | gets a memory field, decodes json into maybe structure
 getMemField ∷ ∀ α. (DecodeJson α) ⇒ String → CG Env (Maybe α)
 getMemField field = do
   mem ← asks (_.memory)
@@ -194,7 +198,7 @@ freeCreepMem n = do
 
 -- | clears a single field of creep data, at a ffi level
 freeCreepMemField ∷ Creep → String → CG Env Unit
-freeCreepMemField creep str = liftEffect $ unsafeDeleteFieldEff str creep
+freeCreepMemField creep str = liftEffect $ FFI.unsafeDeleteFieldEff str creep
 
 -- | some other creep functions
 creepHarvest ∷ ∀ α. Creep → RoomObject α → CG Env ReturnCode
@@ -219,10 +223,10 @@ createConstructionSite ∷ ∀ α. Room → TargetPosition α
 createConstructionSite room pos stype = do
   ret ← liftEffect $ Room.createConstructionSite room pos structure_container
   if ret ≡ ok then do
-    log' LogDebug $ "creating structure: " <> (show structure_container)
+    --log' LogDebug $ "creating structure: " <> (show structure_container)
     pure true
   else do
-    log' LogDebug $ "createConstructionSite error: " <> (show ret)
+    --log' LogDebug $ "createConstructionSite error: " <> (show ret)
     pure false
 
 

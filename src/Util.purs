@@ -61,9 +61,10 @@ findSourceDistance x0 y0 (Tuple spot source) = if avail then distance x2 y2 x0 y
 
 
         avail  = spotAvailable spot
+-- | allows one over the limit
 spotAvailable ∷ HarvestSpot → Boolean
 spotAvailable (HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots })
-  = nHarvs < nMaxHarvs
+  = nHarvs ≤ nMaxHarvs
 
 setNHarvs ∷ Array HarvestSpot → Id Source → Spawn → CG Env Unit
 setNHarvs harvs sourceId spawn = do

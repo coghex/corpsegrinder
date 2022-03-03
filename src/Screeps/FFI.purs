@@ -32,6 +32,8 @@ foreign import isNull ∷ ∀ α. NullOrUndefined α → Boolean
 foreign import isUndefined ∷ ∀ α. NullOrUndefined α → Boolean
 foreign import toMaybeImpl ∷ ∀ α m. Fn3 (NullOrUndefined α) m (α → m) m
 
+foreign import consoleClear ∷ Effect Unit
+
 toNullable ∷ ∀ α. Maybe α → NullOrUndefined α
 toNullable = maybe null notNullOrUndefined
 

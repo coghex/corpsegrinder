@@ -217,7 +217,7 @@ calcRoleScore ∷ ∀ α. Int → TargetPosition α → Int → Array Job → F.
 calcRoleScore _    _   _          _    _      CreepPeon _     RoleNULL        = 0
 calcRoleScore _    _   _          _    _      CreepPeon _     RoleIdle        = 1
 calcRoleScore utl0 pos energyNeed jobs creeps CreepPeon role0 RoleUpgrader    = avgScores utl0 score
-  where score     = 1000 `quot` ((2*upgraders) + 1)
+  where score     = 1000 `quot` ((3*upgraders) + 1)
         upgraders = iDoThat + numberOfRole RoleUpgrader creeps
         iDoThat   = case role0 of
                       RoleUpgrader → -1
