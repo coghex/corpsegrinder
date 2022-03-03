@@ -3,7 +3,7 @@ module Builder where
 import UPrelude
 import Control.Monad.Reader (asks)
 import Data.Argonaut.Core (Json)
-import Data.Array (length, uncons, take, index)
+import Data.Array (length, uncons, take, index, head, tail, reverse)
 import Data.Maybe (Maybe(..))
 import Foreign.Object as F
 import Screeps.Data
@@ -102,7 +102,16 @@ buildExtension nExtensions spawn = do
       pos = possibleSites `index` (nExtensions `mod` 9)
   case pos of
     Nothing → log' LogError "cant create site"
-    Just p0 → createConstructionSite (RO.room spawn) p0 structure_extension
+    Just p0 → buildExtensionF spawn p0 possibleSites
+buildExtensionF ∷ ∀ α. Spawn → TargetPosition α
+  → Array (TargetPosition α) → CG Env Unit
+buildExtensionF _     _   []    = log' LogWarn "no possible sites for extensions"
+buildExtensionF spawn pos sites = do
+  ret ← createConstructionSite (RO.room spawn) pos structure_extension
+  if ret then pure unit else do
+    case uncons sites of
+      Nothing               → log' LogError "fuck"
+      Just {head:s,tail:ss} → buildExtensionF spawn s ss
 
 buildContainer ∷ Int → Spawn → CG Env Unit
 buildContainer nContainers spawn = do
@@ -115,8 +124,21 @@ buildContainer nContainers spawn = do
             sites         = take 5 $ shuffleList possibleSites
             pos           = sites `index` nContainers
         case (sites `index` nContainers) of
-          Nothing  → log' LogError "cant create site"
-          Just pos → createConstructionSite (RO.room spawn) pos structure_container
+          Nothing  → log' LogError "cant create container"
+          Just pos → buildContainerF spawn pos
+                                     $ reverse $ shuffleList possibleSites
+-- | some construction sites return errors for various reasons, if
+--   may conflict wit other containers but it will move on if so
+--   that is the case we try and look for other options, these
+buildContainerF ∷ ∀ α. Spawn → TargetPosition α
+  → Array (TargetPosition α) → CG Env Unit
+buildContainerF _     _   []    = log' LogWarn "no possible sites for containers"
+buildContainerF spawn pos sites = do
+  ret ← createConstructionSite (RO.room spawn) pos structure_container
+  if ret then pure unit else do
+    case uncons sites of
+      Nothing               → log' LogError "fuck"
+      Just {head:s,tail:ss} → buildContainerF spawn s ss
 
 findContainerSites ∷ ∀ α. Array HarvestSpot → Array (TargetPosition α)
 findContainerSites spots = expandSpots spotArrays

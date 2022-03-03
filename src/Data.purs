@@ -44,20 +44,37 @@ instance showLoopStatus ∷ Show LoopStatus where
   show (LoopError err) = "loopError:" <> err
   show LoopNULL        = "loopNULL"
 
-data CreepType = CreepPeon | CreepGrunt | CreepNULL
+data CreepType = CreepPeon | CreepCollier | CreepHauler | CreepGrunt | CreepNULL
 instance encodeCreepType ∷ EncodeJson CreepType where
-  encodeJson CreepPeon  = encodeJson "creepPeon"
-  encodeJson CreepGrunt = encodeJson "creepGrunt"
-  encodeJson CreepNULL  = encodeJson "creepNULL"
+  encodeJson CreepPeon    = encodeJson "creepPeon"
+  encodeJson CreepCollier = encodeJson "creepCollier"
+  encodeJson CreepHauler  = encodeJson "creepHauler"
+  encodeJson CreepGrunt   = encodeJson "creepGrunt"
+  encodeJson CreepNULL    = encodeJson "creepNULL"
 instance decodeCreepType ∷ DecodeJson CreepType where
   decodeJson json = do
     string ← decodeJson json
     note (TypeMismatch "DecodeJson") (ctFromStr string)
 ctFromStr ∷ String → Maybe CreepType
-ctFromStr "creepPeon"  = Just CreepPeon
-ctFromStr "creepGrunt" = Just CreepGrunt
-ctFromStr "creepNULL"  = Just CreepNULL
-ctFromStr _            = Nothing
+ctFromStr "creepPeon"    = Just CreepPeon
+ctFromStr "creepCollier" = Just CreepCollier
+ctFromStr "creepHauler"  = Just CreepHauler
+ctFromStr "creepGrunt"   = Just CreepGrunt
+ctFromStr "creepNULL"    = Just CreepNULL
+ctFromStr _              = Nothing
+instance eqCreepType ∷ Eq CreepType where
+  eq CreepPeon    CreepPeon    = true
+  eq CreepCollier CreepCollier = true
+  eq CreepHauler  CreepHauler  = true
+  eq CreepGrunt   CreepGrunt   = true
+  eq CreepNULL    CreepNULL    = true
+  eq _            _            = false
+
+data CreepCounts = CreepCounts
+  { nPeon    ∷ Int
+  , nCollier ∷ Int
+  , nHauler  ∷ Int
+  , nGrunt   ∷ Int }
 
 data Job       = JobNULL | JobRepair String
 instance showJob ∷ Show Job where
@@ -168,6 +185,9 @@ instance decodeJson ∷ DecodeJson Spot where
     spotX    ← obj .: "spotX"
     spotY    ← obj .: "spotY"
     pure $ Spot { spotType, spotX, spotY }
+instance spotEq ∷ Eq Spot where
+  eq (Spot {spotType:_,spotX:x0,spotY:y0})
+     (Spot {spotType:_,spotX:x1,spotY:y1}) = (x0 ≡ x1) ∧ (y0 ≡ y1)
 
 data SpotType = SpotPlain | SpotWall | SpotSwamp | SpotLava
 instance encodeSpotType ∷ EncodeJson SpotType where

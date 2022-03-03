@@ -128,7 +128,7 @@ getMemField field = do
   ret ← liftEffect $ Memory.get mem field
   case ret of
     Left err → do
-      log' LogError $ printJsonDecodeError err
+      log' LogError $ "getMemField: " <> printJsonDecodeError err
       pure Nothing
     Right v0 → pure v0
 -- sets a memory field
@@ -143,7 +143,7 @@ getSpawnMem spawn field = do
   ret ← liftEffect $ Spawn.getMemory spawn field
   case ret of
     Left err → do
-      log' LogError $ printJsonDecodeError err
+      log' LogError $ "getSpawnMem: " <> printJsonDecodeError err
       pure Nothing
     Right v0 → pure v0
 setSpawnMem ∷ ∀ α. (EncodeJson α) ⇒ Spawn → String → α → CG Env Unit
@@ -156,7 +156,7 @@ spawnCreep spawn parts name' mem = do
   ret ← liftEffect $ Spawn.spawnCreep' spawn parts name' mem
   case ret of
     Left err → do
-      log' LogError $ show err
+      log' LogError $ "spawnCreep: " <> show err
       pure Nothing
     Right r0 → pure $ Just r0
 
@@ -166,7 +166,7 @@ getAllCreepMem creep = do
   ret ← liftEffect $ Creep.memory creep
   case ret of
     Left err → do
-      log' LogError $ printJsonDecodeError err
+      log' LogError $ "getAllCreepMem: " <> printJsonDecodeError err
       pure Nothing
     Right v0 → pure v0
 getCreepMem ∷ ∀ α. (DecodeJson α) ⇒ Creep → String → CG Env (Maybe α)
@@ -174,7 +174,7 @@ getCreepMem creep field = do
   ret ← liftEffect $ Creep.getMemory creep field
   case ret of
     Left err → do
-      log' LogError $ printJsonDecodeError err
+      log' LogError $ "getCreepMem: " <> printJsonDecodeError err
       pure Nothing
     Right v0 → pure v0
 setCreepMem ∷ ∀ α. (EncodeJson α) ⇒ Creep → String → α → CG Env Unit
@@ -213,12 +213,17 @@ creepRepair creep struct = liftEffect
   $ Creep.repair creep struct
 
 -- room functions
-createConstructionSite ∷ ∀ α. Room → TargetPosition α → StructureType → CG Env Unit
+-- | returns false if there was an error
+createConstructionSite ∷ ∀ α. Room → TargetPosition α
+                              → StructureType → CG Env Boolean
 createConstructionSite room pos stype = do
   ret ← liftEffect $ Room.createConstructionSite room pos structure_container
-  if ret ≡ ok then
+  if ret ≡ ok then do
     log' LogDebug $ "creating structure: " <> (show structure_container)
-  else log' LogDebug $ "createConstructionSite error: " <> (show ret)
+    pure true
+  else do
+    log' LogDebug $ "createConstructionSite error: " <> (show ret)
+    pure false
 
 
 -- game functions

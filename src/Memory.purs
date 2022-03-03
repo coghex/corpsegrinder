@@ -39,9 +39,9 @@ freeCreepMemoryF mem creeps = do
     case memData of
       Nothing → pure unit
       Just md → case (getField md "target") of
-                  Left err → log' LogError $ show err
+                  Left err → log' LogError $ "freeCreepMemory: " <> show err
                   Right t0 → case (getField md "home") of
-                    Left err → log' LogError $ show err
+                    Left err → log' LogError $ "freeCreepMemory: " <> show err
                     Right h0 → freeSpawnNHarv t0 h0
     memory ← asks (_.memory)
     freeCreepMem creepN
@@ -54,6 +54,7 @@ freeCreepMemoryF mem creeps = do
                     Nothing                  → ""
 
 -- | removes creeps nharv value on a source when it dies
+--   also removes spots that have been build over by containers
 freeSpawnNHarv ∷ Id Source → Id Spawn → CG Env Unit
 freeSpawnNHarv destid spawnid = do
   game ← asks (_.game)
@@ -65,5 +66,3 @@ freeSpawnNHarv destid spawnid = do
       case harvSpots' of
         Nothing → log' LogWarn "destination not a spawn"
         Just harvSpots → removeNHarvs harvSpots destid spawn
-
-

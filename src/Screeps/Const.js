@@ -21,6 +21,11 @@ exports.err_gcl_not_enough = ERR_GCL_NOT_ENOUGH;
 exports.pMove = MOVE;
 exports.pWork = WORK;
 exports.pCarry = CARRY;
+exports.pAttack = ATTACK;
+exports.pRangedAttack = RANGED_ATTACK;
+exports.pHeal  = HEAL;
+exports.pClaim = CLAIM;
+exports.pTough = TOUGH;
 
 exports.terrain_mask_wall = TERRAIN_MASK_WALL;
 exports.terrain_mask_swamp = TERRAIN_MASK_SWAMP;

@@ -21,9 +21,14 @@ foreign import err_not_enough_extensions ∷ ReturnCode
 foreign import err_rcl_not_enough        ∷ ReturnCode
 foreign import err_gcl_not_enough        ∷ ReturnCode
 
-foreign import pMove  ∷ BodyPartType
-foreign import pWork  ∷ BodyPartType
-foreign import pCarry ∷ BodyPartType
+foreign import pMove         ∷ BodyPartType
+foreign import pWork         ∷ BodyPartType
+foreign import pCarry        ∷ BodyPartType
+foreign import pAttack       ∷ BodyPartType
+foreign import pRangedAttack ∷ BodyPartType
+foreign import pHeal         ∷ BodyPartType
+foreign import pClaim        ∷ BodyPartType
+foreign import pTough        ∷ BodyPartType
 
 foreign import terrain_mask_wall ∷ TerrainMask
 foreign import terrain_mask_swamp ∷ TerrainMask

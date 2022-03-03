@@ -80,7 +80,8 @@ processCreep utl0 creepPos numCS energyNeed jobs roles creeps key creep0 =
         ind     = findInd roles alt 0
         alt     = bestRole scores roles 0 RoleNULL
         newRole = Just $ encodeJson alt
-        scores  = map (calcRoleScore creepU0 creepPos energyNeed jobs creeps role0) roles
+        scores  = map (calcRoleScore creepU0 creepPos energyNeed
+                                     jobs creeps type0 role0) roles
         upgrading  = getField' creep0 "upgrading"
         building   = getField' creep0 "building"
         repairing  = getField' creep0 "repairing"
@@ -92,6 +93,9 @@ processCreep utl0 creepPos numCS energyNeed jobs roles creeps key creep0 =
         findIfBusy Nothing  Nothing  (Just v) = v
         -- if we get to this last case we fucked up
         findIfBusy _        _        _        = false
+        type0   = case getField' creep0 "typ" of
+                    Nothing → CreepNULL
+                    Just t0 → t0
         role0   = case getField' creep0 "role" of
                     Nothing → RoleNULL
                     Just r0 → r0
@@ -208,25 +212,26 @@ bestRole scores roles score role = if (score' > score) then bestRole scores' rol
                      Nothing → 0
 
 -- | finds the score for a given role for a given creep, averages with current score
-calcRoleScore ∷ ∀ α. Int → TargetPosition α → Int → Array Job → F.Object (F.Object Json) → Role → Role → Int
-calcRoleScore _    _   _          _    _      _     RoleNULL        = 0
-calcRoleScore _    _   _          _    _      _     RoleIdle        = 1
-calcRoleScore utl0 pos energyNeed jobs creeps role0 RoleUpgrader    = avgScores utl0 score
+--   first checks creep type as different creep types value roles differently
+calcRoleScore ∷ ∀ α. Int → TargetPosition α → Int → Array Job → F.Object (F.Object Json) → CreepType → Role → Role → Int
+calcRoleScore _    _   _          _    _      CreepPeon _     RoleNULL        = 0
+calcRoleScore _    _   _          _    _      CreepPeon _     RoleIdle        = 1
+calcRoleScore utl0 pos energyNeed jobs creeps CreepPeon role0 RoleUpgrader    = avgScores utl0 score
   where score     = 1000 `quot` ((2*upgraders) + 1)
         upgraders = iDoThat + numberOfRole RoleUpgrader creeps
         iDoThat   = case role0 of
                       RoleUpgrader → -1
                       _            → 0
-calcRoleScore utl0 pos energyNeed jobs creeps role0 (RoleBuilder n) = avgScores utl0 score
+calcRoleScore utl0 pos energyNeed jobs creeps CreepPeon role0 (RoleBuilder n) = avgScores utl0 score
   where score    = n * (1000 `quot` (builders + 1))
         builders = iDoThat + numberOfRole (RoleBuilder n) creeps
         iDoThat  = case role0 of
                      RoleBuilder _ → -1
                      _             → 0
-calcRoleScore utl0 pos energyNeed jobs creeps role0 (RoleWorker _) = avgScores utl0 score
+calcRoleScore utl0 pos energyNeed jobs creeps CreepPeon role0 (RoleWorker _)  = avgScores utl0 score
   where score     = calcJobValue jobvalue
         jobvalue  = calcBestJob pos jobs
-calcRoleScore utl0 pos energyNeed jobs creeps role0 RoleHarvester = avgScores utl0 score
+calcRoleScore utl0 pos energyNeed jobs creeps CreepPeon role0 RoleHarvester   = avgScores utl0 score
 -- we wont ever really need more than a couple
   where score   = (100*energyNeed) `quot` ((2*harvs) + 1)
 
@@ -234,6 +239,7 @@ calcRoleScore utl0 pos energyNeed jobs creeps role0 RoleHarvester = avgScores ut
         iDoThat = case role0 of
                     RoleHarvester → -1
                     _             → 0
+calcRoleScore _    _   _          _    _      _         _     _               = 0
 
 -- | job value is based on distance and type of job
 calcBestJob ∷ ∀ α. TargetPosition α → Array Job → Maybe Job

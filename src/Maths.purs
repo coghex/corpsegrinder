@@ -79,3 +79,16 @@ subtractSet a  b  = val <> subtractSet a' b
         a'  = case uncons a of
                 Nothing              → []
                 Just {head:_,tail:t} → t
+
+-- removes an element from an array
+removeVal ∷ ∀ α. (Eq α) ⇒ α → Array α → Array α
+removeVal _ []  = []
+removeVal s arr = s' <> removeVal s arr'
+  where s'   = case uncons arr of
+                 Nothing              → []
+                 Just {head:h,tail:_} → if h ≡ s then [] else [h]
+
+        arr' = case uncons arr of
+                 Nothing              → []
+                 Just {head:_,tail:t} → t
+
