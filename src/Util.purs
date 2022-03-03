@@ -18,7 +18,7 @@ import Screeps.Store as Store
 import Screeps.Const ( resource_energy, find_my_construction_sites)
 import Foreign.Object as F
 import Maths (distance, findMin)
-import Data (HarvestSpot(..), Spot(..), Role(..))
+import Data
 import CG
 
 -- | basic functino to find nearest object of type
@@ -120,11 +120,11 @@ iHarvest ∷ F.Object Role → String → Creep → Boolean
 iHarvest roles key _ = case (F.lookup key roles) of
   Nothing → false
   Just v0 → case v0 of
-              RoleHarvester → true
-              RoleUpgrader  → true
-              RoleBuilder _ → true
-              RoleWorker  _ → true
-              _             → false
+              RoleHarvester            → true
+              RoleUpgrader             → true
+              RoleBuilder _            → true
+              RoleWorker (JobRepair _) → true
+              _                        → false
 
 -- | returns array of roles given creep array
 makeRoleArray ∷ String → F.Object Json → Role

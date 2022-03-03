@@ -48,8 +48,9 @@ runCorpsegrinder LoopGo          = do
     6 → manageJobs
     -- create new construction sites, based on rcl
     9 → buildRoom
-    -- change creep role one per tick
-    _ → processCreeps time
+    _ → pure unit
+  -- change creep role one per tick
+  processCreeps time
   -- preform actions for every creep
   preformCreeps
 runCorpsegrinder LoopReset       = do

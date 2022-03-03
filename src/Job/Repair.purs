@@ -16,7 +16,7 @@ import Util (needsRepair)
 import Maths (subtractSet)
 import Creep.Peon (getEnergy, creepFull, creepHasEnergy, creepEmpty)
 
-
+-- | creates new repair jobs
 manageRepairJobs ∷ Spawn → CG Env Unit
 manageRepairJobs spawn = do
   let room    = RO.room spawn
@@ -46,6 +46,7 @@ makeRepairJobs structs = struct
                      Nothing              → []
                      Just {head:_,tail:t} → t
 
+-- | preforms repair jobs
 preformJobRepair ∷ ∀ α. Creep → Id (Structure α) → CG Env Unit
 preformJobRepair creep struct = do
   mem ← getAllCreepMem creep
@@ -70,11 +71,16 @@ preformJobRepairFF creep struct repairing =
       case target' of
         Nothing  → pure unit
         Just target → do
-          res ← creepRepair creep target
-          if (res ≡ err_not_in_range) then do
-            ret ← moveCreepTo creep (TargetObj target)
-            pure unit
-          else pure unit
+          let hpLeft = Structure.hits    target
+              hpTotl = Structure.hitsMax target
+          -- job complete when hp almost full
+          if (hpTotl - hpLeft) < 2 then setCreepMem creep "role" $ JobNULL
+          else do
+            res ← creepRepair creep target
+            if (res ≡ err_not_in_range) then do
+              ret ← moveCreepTo creep (TargetObj target)
+              pure unit
+            else pure unit
     else pure unit
   else if creepFull creep then setCreepMem creep "repairing" true
   else getEnergy creep

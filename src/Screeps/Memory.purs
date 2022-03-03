@@ -26,7 +26,7 @@ free memoryGlobal key
   = unsafeDeleteFieldEff key memoryGlobal
 clear ∷ MemoryGlobal → Effect Unit
 clear = unsafeClearEff
--- TODO: find out why this doesnt work
+-- TODO: find out why this doesnt work, or delete
 freeField ∷ MemoryGlobal → String → String → Effect Unit
 freeField memoryGlobal obj key
   = unsafeDeleteFieldKeyEff obj key memoryGlobal

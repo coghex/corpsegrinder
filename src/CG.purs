@@ -26,6 +26,7 @@ import Screeps.RoomObject as RO
 import Screeps.Creep  as Creep
 import Screeps.Const
 import Screeps.Structure.Spawn as Spawn
+import Screeps.FFI (unsafeDeleteFieldEff)
 import Foreign.Object as F
 import Control.Monad.Error.Class (class MonadError)
 import Control.Monad.Reader.Class (class MonadAsk, class MonadReader)
@@ -191,6 +192,10 @@ freeCreepMem n = do
   memory ← asks (_.memory)
   liftEffect $ Memory.freeCreep memory n
 
+-- | clears a single field of creep data, at a ffi level
+freeCreepMemField ∷ Creep → String → CG Env Unit
+freeCreepMemField creep str = liftEffect $ unsafeDeleteFieldEff str creep
+
 -- | some other creep functions
 creepHarvest ∷ ∀ α. Creep → RoomObject α → CG Env ReturnCode
 creepHarvest creep obj = liftEffect $ Creep.harvest creep obj
@@ -212,8 +217,8 @@ createConstructionSite ∷ ∀ α. Room → TargetPosition α → StructureType 
 createConstructionSite room pos stype = do
   ret ← liftEffect $ Room.createConstructionSite room pos structure_container
   if ret ≡ ok then
-    log' LogInfo $ "creating structure: " <> (show structure_container)
-  else log' LogError $ "buildContainer error: " <> (show ret)
+    log' LogDebug $ "creating structure: " <> (show structure_container)
+  else log' LogDebug $ "createConstructionSite error: " <> (show ret)
 
 
 -- game functions

@@ -53,8 +53,7 @@ buildRoom = do
         2 → do
           let sites  = Room.find (RO.room s1) find_construction_sites
               nSites = length sites
-          -- at level two we can handle two construction sites
-          if nSites < 2 then do
+          if nSites < 1 then do
             let creeps = Game.creeps game
                 nContainers   = nBuildConts + nContsSites
                 nContsSites   = length $ Room.find' (RO.room s1)
