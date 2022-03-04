@@ -103,12 +103,14 @@ data Role      = RoleIdle
                | RoleHarvester
                | RoleUpgrader
                | RoleWorker Job
+               | RoleCollier
                | RoleNULL
 instance showRole ∷ Show Role where
   show RoleHarvester   = "RoleHarvester"
   show RoleUpgrader    = "RoleUpgrader"
   show (RoleBuilder n) = "RoleBuilder " <> (show n)
   show (RoleWorker _)  = "RoleWorker"
+  show RoleCollier     = "RoleCollier"
   show RoleIdle        = "RoleIdle"
   show RoleNULL        = "RoleNULL"
 instance eqRoles ∷ Eq Role where
@@ -118,6 +120,7 @@ instance eqRoles ∷ Eq Role where
   eq RoleUpgrader    RoleUpgrader    = true
   eq (RoleWorker _)  (RoleWorker _)  = true
   eq (RoleBuilder _) (RoleBuilder _) = true
+  eq RoleCollier     RoleCollier     = true
   eq _               _               = false
 instance encodeRole ∷ EncodeJson Role where
   encodeJson RoleIdle        = encodeJson "RoleIdle"
@@ -125,6 +128,7 @@ instance encodeRole ∷ EncodeJson Role where
   encodeJson RoleUpgrader    = encodeJson "RoleUpgrader"
   encodeJson (RoleBuilder n) = encodeJson $ "RoleBuilder:" <> (show n)
   encodeJson (RoleWorker n)  = encodeJson $ "RoleWorker:" <> (show n)
+  encodeJson RoleCollier     = encodeJson "RoleCollier"
   encodeJson RoleNULL        = encodeJson "RoleNULL"
 instance decodeRole ∷ DecodeJson Role where
   decodeJson json = do
@@ -134,6 +138,7 @@ roleFromStr ∷ String → Maybe Role
 roleFromStr "RoleHarvester" = Just RoleHarvester
 roleFromStr "RoleUpgrader"  = Just RoleUpgrader
 roleFromStr "RoleIdle"      = Just RoleIdle
+roleFromStr "RoleCollier"   = Just RoleCollier
 roleFromStr "RoleNULL"      = Just RoleNULL
 roleFromStr str             = if (length str) > 11 then
     if (take 11 str) ≡ "RoleBuilder" then
@@ -148,7 +153,7 @@ roleFromStr str             = if (length str) > 11 then
   else Nothing
 
 roleList = [RoleIdle, RoleHarvester, (RoleBuilder 0), (RoleWorker JobNULL)
-           , RoleUpgrader, RoleNULL] ∷ Array Role
+           , RoleCollier, RoleUpgrader, RoleNULL] ∷ Array Role
 
 data HarvestSpot = HarvestSpot { sourceName ∷ Id Source
                                , nHarvs     ∷ Int
@@ -198,7 +203,7 @@ instance encodeSpotType ∷ EncodeJson SpotType where
 instance decodeSpotType ∷ DecodeJson SpotType where
   decodeJson json = do
     string ← decodeJson json
-    note (TypeMismatch "Role") (spotTypeFromStr string)
+    note (TypeMismatch "Spot") (spotTypeFromStr string)
 spotTypeFromStr ∷ String → Maybe SpotType
 spotTypeFromStr "spotPlain" = Just SpotPlain
 spotTypeFromStr "spotWall"  = Just SpotWall
@@ -206,3 +211,21 @@ spotTypeFromStr "spotSwamp" = Just SpotSwamp
 spotTypeFromStr "spotLava"  = Just SpotLava
 spotTypeFromStr _           = Nothing
 
+data ContainerMemory = ContainerMemory
+  { id   ∷ Id Container 
+  , used ∷ Boolean }
+-- containers are the same if they have the same id
+instance eqContainerMemory ∷ Eq ContainerMemory where
+  eq (ContainerMemory {id:id0,used:u0})
+     (ContainerMemory {id:id1,used:u1}) = id0 ≡ id1
+instance encodeContainerMemory ∷ EncodeJson ContainerMemory where
+  encodeJson (ContainerMemory {id,used}) =
+    "id"        := id
+      ~> "used" := used
+      ~> jsonEmptyObject
+instance decodeContainerMemory ∷ DecodeJson ContainerMemory where
+  decodeJson json = do
+    obj  ← decodeJson json
+    id   ← obj .: "id"
+    used ← obj .: "used"
+    pure $ ContainerMemory { id, used }

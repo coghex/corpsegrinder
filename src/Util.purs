@@ -16,7 +16,7 @@ import Screeps.Structure ( structureType, hits, hitsMax )
 import Screeps.ConstructionSite as CS
 import Screeps.Store as Store
 import Screeps.Const ( resource_energy, find_my_construction_sites
-                     , find_my_structures, structure_container )
+                     , find_structures, structure_container )
 import Foreign.Object as F
 import Maths (distance, findMin, removeVal)
 import Data
@@ -58,8 +58,6 @@ findSourceDistance x0 y0 (Tuple spot source) = if avail then distance x2 y2 x0 y
         y2     = case (head (harvSpots)) of
                    Nothing → 1000000
                    Just (Spot {spotType, spotX, spotY}) → spotY
-
-
         avail  = spotAvailable spot
 -- | allows one over the limit
 spotAvailable ∷ HarvestSpot → Boolean
@@ -78,9 +76,8 @@ setNHarvsF sourceId (HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots }) =
 -- | remove a harvester from a spawn's memory and sets any containers ton not work
 removeNHarvs ∷ Array HarvestSpot → Id Source → Spawn → CG Env Unit
 removeNHarvs harvs0 sourceId spawn = do
-  let containers = Room.find' (RO.room spawn) find_my_structures
+  let containers = Room.find' (RO.room spawn) find_structures
                               $ structIsType structure_container
-      
       newHarvs1 = map (removeNHarvsF sourceId) harvs0
       newHarvs2 = map (removeContainerHarvSpots containers) newHarvs1
   setSpawnMem spawn "harvestSpots" newHarvs2
@@ -117,6 +114,7 @@ containerInHarvestSpot pos harvSpots = case uncons harvSpots of
   Nothing              → Nothing
   Just {head:h,tail:t} → if pos `posEqSpot` h then Just h else
                            containerInHarvestSpot pos t
+-- | boolean equivalence of room position and spot
 posEqSpot ∷ RoomPosition → Spot → Boolean
 posEqSpot pos (Spot {spotType,spotX,spotY}) =
   ((RP.x pos) ≡ spotX) ∧ ((RP.y pos) ≡ spotY)
@@ -180,3 +178,10 @@ makeCreepTypeArray ∷ String → F.Object Json → CreepType
 makeCreepTypeArray _ val = case (getField val "typ") of
   Left  _  → CreepNULL
   Right t0 → t0
+
+-- | finds the spot of a room object
+-- | TODO: find the spotType
+findSpot ∷ ∀ α. RoomObject α → Spot
+findSpot obj = Spot { spotType: SpotPlain
+                    , spotX:    (RP.x (RO.pos obj))
+                    , spotY:    (RP.y (RO.pos obj)) }

@@ -78,7 +78,7 @@ foreign import find_sources_active             ∷ FindType Source
 foreign import find_sources                    ∷ FindType Source
 foreign import find_dropped_energy             ∷ FindType Resource
 foreign import find_dropped_resources          ∷ FindType Resource
-foreign import find_structures                 ∷ FindType (Structure Unit)
+foreign import find_structures                 ∷ ∀ α. FindType (Structure α)
 foreign import find_my_structures              ∷ ∀ α. FindType (Structure α)
 foreign import find_hostile_structures         ∷ FindType (Structure Unit)
 foreign import find_flags                      ∷ FindType Flag

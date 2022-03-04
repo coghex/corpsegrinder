@@ -15,6 +15,7 @@ import Screeps.Structure.Spawn as Spawn
 import Screeps.Store as Store
 import Screeps.Const (resource_energy, pWork, pMove, pCarry)
 import Role.Harvester (preformHarvester)
+import Role.Collier (preformCollier)
 import Role.Upgrader (preformUpgrader)
 import Role.Builder (preformBuilder)
 import Role.Worker (preformWorker)
@@ -60,4 +61,5 @@ preformRoleF creep RoleHarvester   = preformHarvester creep
 preformRoleF creep (RoleWorker j)  = preformWorker    creep j
 preformRoleF creep (RoleBuilder _) = preformBuilder   creep
 preformRoleF creep RoleUpgrader    = preformUpgrader  creep
+preformRoleF creep RoleCollier     = preformCollier   creep
 preformRoleF creep RoleNULL        = pure unit

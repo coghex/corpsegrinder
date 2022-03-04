@@ -23,6 +23,7 @@ import Screeps.Memory as Memory
 import Screeps.Game   as Game
 import Screeps.Room   as Room
 import Screeps.RoomObject as RO
+import Screeps.PathFinder as PF
 import Screeps.Creep  as Creep
 import Screeps.Const
 import Screeps.Structure.Spawn as Spawn
@@ -33,9 +34,10 @@ import Control.Monad.Reader.Class (class MonadAsk, class MonadReader)
 import Control.Monad.Trans.Class (class MonadTrans, lift)
 import Control.Category (identity)
 import Data.Newtype (class Newtype)
+import Data (ContainerMemory(..))
 
 -- read only environment
-type Env = { memory ∷ MemoryGlobal, game ∷ GameGlobal }
+type Env = { memory ∷ MemoryGlobal, game ∷ GameGlobal, pf ∷ PathFinder }
 
 -- continuation monad
 newtype CG ε α = CG (Env → Effect α)
@@ -135,6 +137,15 @@ getMemField field = do
       log' LogError $ "getMemField: " <> printJsonDecodeError err
       pure Nothing
     Right v0 → pure v0
+-- | the only difference is we dont log
+getMemFieldMaybe ∷ ∀ α. (DecodeJson α) ⇒ String → CG Env (Maybe α)
+getMemFieldMaybe field = do
+  mem ← asks (_.memory)
+  ret ← liftEffect $ Memory.get mem field
+  case ret of
+    Left err → pure Nothing
+    Right v0 → pure v0
+
 -- sets a memory field
 setMemField ∷ ∀ α. (EncodeJson α) ⇒ String → α → CG Env Unit
 setMemField field val = do
@@ -235,3 +246,12 @@ getObjectById' ∷ ∀ α. Id α → CG Env (Maybe α)
 getObjectById' id = do
   game ← asks (_.game)
   pure $ Game.getObjectById game id
+-- | similar but just for container return structure
+getContainerByMemory ∷ ContainerMemory → CG Env (Maybe Container)
+getContainerByMemory (ContainerMemory {id:id,used:used}) = getObjectById' id
+
+-- pathfinder
+searchPath ∷ RoomPosition → Array Goal → CG Env ReturnPath
+searchPath pos goals = do
+  pathFinder ← asks (_.pf)
+  liftEffect $ PF.search pathFinder pos goals

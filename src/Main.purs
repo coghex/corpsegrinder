@@ -9,10 +9,12 @@ import Screeps.Room   as Room
 import Screeps.RoomObject as RO
 import Screeps.Memory as Memory
 import Screeps.Game   as Game
+import Screeps.PathFinder as PF
 import Screeps.Const (find_sources)
 import Foreign.Object as F
 import Memory (freeCreepMemory)
 import Manager (manageCreeps, manageJobs, calcMaxCreeps)
+import Monitor (monitorCreeps)
 import Processor (processCreeps, numberOfRole)
 import Preformer (preformCreeps)
 import Builder (buildRoom)
@@ -23,9 +25,10 @@ import CG (CG, Env, LogLevel(..), getMemField, log'
 
 main ∷ Effect Unit
 main = do
-  m ← Memory.getMemoryGlobal
-  g ← Game.getGameGlobal
-  runCG corpseGrinder { memory:m, game:g }
+  m  ← Memory.getMemoryGlobal
+  g  ← Game.getGameGlobal
+  pf ← PF.getPathFinderGlobal
+  runCG corpseGrinder { memory:m, game:g, pf:pf }
 corpseGrinder ∷ CG Env Unit
 corpseGrinder = do
   loopStatus ← getMemField "loopStatus"
@@ -48,16 +51,18 @@ runCorpsegrinder LoopGo          = do
     -- free memory associated with dead creeps
     0 → freeCreepMemory
     -- prints whatever
-    1 → consoleClear
-    2 → printDebug
+--    1 → consoleClear
+--    2 → printDebug
+    -- monitors changes to the game state and sets memory accordingly
+    3 → monitorCreeps
     -- create new creeps, manage creep limit
-    3 → manageCreeps
+    5 → manageCreeps
     -- create new jobs, place them in job pool
     6 → manageJobs
     -- create new construction sites, based on rcl
     9 → buildRoom
     _ → pure unit
-  -- change creep role one per tick
+  -- change creep role one per tick, round-robin style
   processCreeps time
   -- preform actions for every creep
   preformCreeps

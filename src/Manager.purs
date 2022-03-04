@@ -156,7 +156,7 @@ spawnCreepWith ∷ Spawn → Array BodyPartType
   → Role → CreepType → CG Env Unit
 spawnCreepWith spawn parts r t = do
     let h = Structure.id spawn
-    res ← spawnCreep spawn parts Nothing { typ: t, role: r, home: h, utility: 0 }
+    res ← spawnCreep spawn parts Nothing { typ: t, role: r, home: h, utility: 0, path:([] ∷ Path) }
     case res of
         Nothing → log' LogWarn  "cant create creep"
         Just s0 → log' LogDebug $ s0 <> " created succesfully"

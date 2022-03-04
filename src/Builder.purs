@@ -12,7 +12,7 @@ import Screeps.Game as Game
 import Screeps.Structure.Controller as Controller
 import Screeps.RoomObject as RO
 import Screeps.RoomPosition as RP
-import Screeps.Const (find_construction_sites, find_my_structures
+import Screeps.Const (find_construction_sites, find_my_structures, find_structures
                      , structure_container, structure_extension, ok)
 import CG
 import Util (structIsType, siteIsType)
@@ -60,14 +60,14 @@ buildRoom = do
                                            find_construction_sites
                                            $ siteIsType structure_container
                 nBuildConts   = length $ Room.find' (RO.room s1)
-                                           find_my_structures
+                                           find_structures
                                            $ structIsType structure_container
                 nExtensions   = nExtsSites + nBuildExts
                 nExtsSites    = length $ Room.find' (RO.room s1)
                                            find_construction_sites
                                            $ siteIsType structure_extension
                 nBuildExts    = length $ Room.find' (RO.room s1)
-                                         find_my_structures
+                                         find_structures
                                          $ structIsType structure_extension
                 nCreeps       = F.size creeps
             if nCreeps > 2 then do

@@ -239,6 +239,7 @@ calcRoleScore utl0 pos energyNeed jobs creeps CreepPeon role0 RoleHarvester   = 
         iDoThat = case role0 of
                     RoleHarvester → -1
                     _             → 0
+calcRoleScore utl0 pos energyNeed jobs creeps CreepCollier role0 RoleCollier  = 1000
 calcRoleScore _    _   _          _    _      _         _     _               = 0
 
 -- | job value is based on distance and type of job

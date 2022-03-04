@@ -91,4 +91,3 @@ removeVal s arr = s' <> removeVal s arr'
         arr' = case uncons arr of
                  Nothing              → []
                  Just {head:_,tail:t} → t
-

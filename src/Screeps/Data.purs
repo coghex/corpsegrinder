@@ -280,9 +280,15 @@ foreign import data Store ∷ Type
 
 -- direction
 newtype Direction = Direction Int
-derive instance genericDirection ∷ Generic Direction _
-instance        eqDirection      ∷ Eq      Direction where eq   = genericEq
-instance        showDirection    ∷ Show    Direction where show = genericShow
+derive instance genericDirection    ∷ Generic    Direction _
+instance        eqDirection         ∷ Eq         Direction where
+  eq         = genericEq
+instance        showDirection       ∷ Show       Direction where
+  show       = genericShow
+instance        decodeJsonDirection ∷ DecodeJson Direction where
+  decodeJson = genericDecodeJson
+instance        encodeJsonDirection ∷ EncodeJson Direction where
+  encodeJson = genericEncodeJson
 type Directions = Array Direction
 
 -- path
@@ -338,7 +344,7 @@ foreign import data CostMatrix ∷ Type
 foreign import data PathFinder ∷ Type
 type RoomRoute = Array RoomExit
 type RoomExit = { exit ∷ FindType Int, room ∷ String }
-type ReturnPath = { path       ∷ Path
-                  , ops        ∷ Int
-                  , cost       ∷ Int
-                  , incomplete ∷ Boolean }
+data ReturnPath = ReturnPath { path       ∷ Path
+                             , ops        ∷ Int
+                             , cost       ∷ Int
+                             , incomplete ∷ Boolean }
