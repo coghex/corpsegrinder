@@ -56,19 +56,19 @@ manageCreeps = do
       creepMem   ← getMemField "creeps"
       let nMaxCreeps = nPeon + nCollier + nHauler + nGrunt
           numPeons = case creepMem of
-            Nothing → 1
+            Nothing → 0
             Just m0 → F.size $ F.filterWithKey (creepIsType CreepPeon memArray) creeps
               where memArray = F.mapWithKey (makeCreepTypeArray) m0
           numColliers = case creepMem of
-            Nothing → 1
+            Nothing → 0
             Just m0 → F.size $ F.filterWithKey (creepIsType CreepCollier memArray) creeps
               where memArray = F.mapWithKey (makeCreepTypeArray) m0
           numHaulers = case creepMem of
-            Nothing → 1
+            Nothing → 0
             Just m0 → F.size $ F.filterWithKey (creepIsType CreepHauler memArray) creeps
               where memArray = F.mapWithKey (makeCreepTypeArray) m0
           numGrunts = case creepMem of
-            Nothing → 1
+            Nothing → 0
             Just m0 → F.size $ F.filterWithKey (creepIsType CreepGrunt memArray) creeps
               where memArray = F.mapWithKey (makeCreepTypeArray) m0
       -- we can use else if here since we only ever want to make one creep per tick

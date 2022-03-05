@@ -1,7 +1,7 @@
 module Util where
 
 import UPrelude
-import Data.Array (index, head, tail, uncons, zip, length)
+import Data.Array (index, head, tail, uncons, zip, length, deleteAt)
 import Data.Int (quot)
 import Data.Tuple (Tuple(..))
 import Data.Maybe (Maybe(..))
@@ -64,6 +64,28 @@ spotAvailable ∷ HarvestSpot → Boolean
 spotAvailable (HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots })
   = nHarvs ≤ nMaxHarvs
 
+-- | finds a random open source
+findOpenSource ∷ Array HarvestSpot → Array Source → Int → Maybe Source
+findOpenSource _        []  _    = Nothing
+findOpenSource harvData arr rand = case hData of
+    Nothing → Nothing
+    Just hd → if (spotAvailable hd) then index arr ind
+              else findOpenSource harvData arr' rand
+    where ind   = findLowestNHarv 10 0 0 harvData
+          arr'  = case (deleteAt ind arr) of
+                    Nothing → []
+                    Just a0 → a0
+          hData = index harvData ind
+
+findLowestNHarv ∷ Int → Int → Int → Array HarvestSpot → Int
+findLowestNHarv n nInd ind []  = nInd
+findLowestNHarv n nInd ind arr = case uncons arr of
+  Nothing → nInd
+  Just {head:(HarvestSpot {sourceName, nHarvs, nMaxHarvs, harvSpots}),tail:t} →
+    if nHarvs < n then findLowestNHarv nHarvs ind  (ind + 1) t
+    else               findLowestNHarv n      nInd (ind + 1) t
+
+-- | sets harvest spot memory when creep targets source
 setNHarvs ∷ Array HarvestSpot → Id Source → Spawn → CG Env Unit
 setNHarvs harvs sourceId spawn = do
   let newHarvs = map (setNHarvsF sourceId) harvs

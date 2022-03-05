@@ -241,7 +241,7 @@ createConstructionSite room pos stype = do
     pure false
 
 
--- game functions
+-- | game functions
 getObjectById' ∷ ∀ α. Id α → CG Env (Maybe α)
 getObjectById' id = do
   game ← asks (_.game)
@@ -250,8 +250,24 @@ getObjectById' id = do
 getContainerByMemory ∷ ContainerMemory → CG Env (Maybe Container)
 getContainerByMemory (ContainerMemory {id:id,used:used}) = getObjectById' id
 
--- pathfinder
+-- | pathfinder
 searchPath ∷ RoomPosition → Array Goal → CG Env ReturnPath
 searchPath pos goals = do
   pathFinder ← asks (_.pf)
   liftEffect $ PF.search pathFinder pos goals
+
+-- these are not even close to really being random
+-- TODO: Math.random functions from js should be in FFI
+-- | random number from a seed
+randomNumber ∷ Int → CG Env Int
+randomNumber seed = do
+  game ← asks (_.game)
+  let time = Game.time game
+  pure $ time `mod` seed
+-- | random boolean from seed
+randomBoolean ∷ Int → CG Env Boolean
+randomBoolean seed = do
+  game ← asks (_.game)
+  let time = Game.time game
+      val  = (time `mod` seed) `mod` 2
+  pure $ val > 0

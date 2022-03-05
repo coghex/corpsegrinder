@@ -17,7 +17,7 @@ import Screeps.Const (find_sources, find_my_spawns
                      , err_not_in_range)
 import Util (findNearest, findNearestOpenSource
             , setNHarvs, hasFreeSpace
-            , removeNHarvs)
+            , removeNHarvs, findOpenSource)
 import CG
 
 -- | checks if we were already going somewhere and if not
@@ -45,13 +45,22 @@ getEnergy creep = do
                      case ret of
                        Nothing → pure []
                        Just h0 → pure h0
-        case (findNearestOpenSource harvSs sources (RO.pos creep)) of
-          Nothing → pure unit
-          Just nearestSource → do
-                  setCreepMem creep "target" (Source.id nearestSource)
-                  case spawn of
-                    Nothing → pure unit
-                    Just s0 → setNHarvs harvSs (Source.id nearestSource) s0
+        -- set to a random target
+        rand ← randomNumber 0
+        case (findOpenSource harvSs sources rand) of
+          Nothing  → pure unit
+          Just sid → do
+                       setCreepMem creep "target" (Source.id sid)
+                       case spawn of
+                         Nothing → pure unit
+                         Just s0 → setNHarvs harvSs (Source.id sid) s0
+--        case (findNearestOpenSource harvSs sources (RO.pos creep)) of
+--          Nothing → pure unit
+--          Just nearestSource → do
+--                  setCreepMem creep "target" (Source.id nearestSource)
+--                  case spawn of
+--                    Nothing → pure unit
+--                    Just s0 → setNHarvs harvSs (Source.id nearestSource) s0
       Just d0 → do
         game ← asks (_.game)
         let nearestSource' = Game.getObjectById game d0

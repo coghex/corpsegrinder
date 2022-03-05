@@ -43,5 +43,14 @@ preformCollier creep = do
                       setCreepMem creep "path" path
                       setCreepMem creep "dest" $ findSpot containerObj
                       pure path
+                    Just [] → do
+                      ReturnPath { path:path
+                                 , ops:ops
+                                 , cost:cost
+                                 , incomplete:incomplete } ← 
+                                       searchPath (RO.pos containerObj) []
+                      setCreepMem creep "path" path
+                      setCreepMem creep "dest" $ findSpot containerObj
+                      pure path
                     Just p0 → pure p0
                   creepMove creep path0
