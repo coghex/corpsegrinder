@@ -10,7 +10,7 @@ import Screeps.Room as Room
 import Screeps.RoomObject as RO
 import Screeps.RoomPosition as RP
 import Screeps.Const (ok)
-import Util (posEqSpot)
+import Util (posEqSpot, spotToPos)
 import CG
 
 creepMove ∷ Creep → Path → CG Env Unit
@@ -24,22 +24,17 @@ creepMove creep []   = do
     Just d0 → if (RO.pos creep) `posEqSpot` d0 then
                 setCreepMem creep "harvesting" true
               else do
-                ReturnPath { path:path
-                           , ops:ops
-                           , cost:cost
-                           , incomplete:incomplete } ← 
-                                 searchPath d0' []
+                let path = Room.findPath (RO.room creep) (RO.pos creep)
+                                         $ spotToPos name d0
+                    name = Room.name (RO.room creep)
                 setCreepMem creep "path" path
-                where d0'  = RP.createRoomPosition x' y' name
-                      name = Room.name (RO.room creep)
-                      x'   = RP.x $ RO.pos creep
-                      y'   = RP.y $ RO.pos creep
--- just follow the directions
+-- | just follow the directions
 creepMove creep path = case uncons path of
     Nothing              → log' LogError "this error is not possible"
-    Just {head:h,tail:_} → do
+    Just {head:h,tail:t} → do
       ret ← liftEffect $ Creep.move creep h.direction
       let cn = Creep.name creep
-      if ret ≠ ok then
-        log' LogWarn $ "Creep " <> cn <> " cant move"
-      else pure unit
+      if ret ≠ ok then do
+        --log' LogWarn $ "Creep " <> cn <> " cant move"
+        pure unit
+      else setCreepMem creep "path" t

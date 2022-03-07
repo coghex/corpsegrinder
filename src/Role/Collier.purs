@@ -35,20 +35,12 @@ preformCollier creep = do
                   pathMem ← getCreepMem creep "path"
                   path0 ← case pathMem of
                     Nothing → do
-                      ReturnPath { path:path
-                                 , ops:ops
-                                 , cost:cost
-                                 , incomplete:incomplete } ← 
-                                       searchPath (RO.pos containerObj) []
+                      let path = Room.findPath (RO.room creep) (RO.pos creep) (RO.pos containerObj)
                       setCreepMem creep "path" path
                       setCreepMem creep "dest" $ findSpot containerObj
                       pure path
                     Just [] → do
-                      ReturnPath { path:path
-                                 , ops:ops
-                                 , cost:cost
-                                 , incomplete:incomplete } ← 
-                                       searchPath (RO.pos containerObj) []
+                      let path = Room.findPath (RO.room creep) (RO.pos creep) (RO.pos containerObj)
                       setCreepMem creep "path" path
                       setCreepMem creep "dest" $ findSpot containerObj
                       pure path

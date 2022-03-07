@@ -143,9 +143,13 @@ posEqSpot ∷ RoomPosition → Spot → Boolean
 posEqSpot pos (Spot {spotType,spotX,spotY}) =
   ((RP.x pos) ≡ spotX) ∧ ((RP.y pos) ≡ spotY)
 
+spotToPos ∷ String → Spot → RoomPosition
+spotToPos room (Spot {spotType,spotX,spotY}) = RP.createRoomPosition spotX spotY room
+
 hasFreeSpace ∷ ∀ α. Structure α → Boolean
 hasFreeSpace structure
   =  (isStorable structure (structureType structure))
+  && (structureType structure) ≠ structure_container
   && (spawnStoreCapacity > 0)
   where spawnStoreCapacity = case (RO.storeMaybe structure) of
                                Nothing → 0

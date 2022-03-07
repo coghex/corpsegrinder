@@ -255,6 +255,8 @@ searchPath ∷ RoomPosition → Array Goal → CG Env ReturnPath
 searchPath pos goals = do
   pathFinder ← asks (_.pf)
   liftEffect $ PF.search pathFinder pos goals
+-- TODO: find out which one of these is wrong in screeps documentation
+--  liftEffect $ Room.findPath room pos0 pos1
 
 -- these are not even close to really being random
 -- TODO: Math.random functions from js should be in FFI
