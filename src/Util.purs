@@ -69,21 +69,23 @@ findOpenSource ∷ Array HarvestSpot → Array Source → Int → Maybe Source
 findOpenSource _        []  _    = Nothing
 findOpenSource harvData arr rand = case hData of
     Nothing → Nothing
-    Just hd → if (spotAvailable hd) then index arr ind
-              else findOpenSource harvData arr' rand
-    where ind   = findLowestNHarv 10 0 0 harvData
+--    Just hd → if (spotAvailable hd) then index arr ind
+    Just hd → index arr ind
+--              else findOpenSource harvData arr' rand
+    where ind   = findMostOpenHarvs (-100) (-100) 0 harvData
           arr'  = case (deleteAt ind arr) of
                     Nothing → []
                     Just a0 → a0
           hData = index harvData ind
 
-findLowestNHarv ∷ Int → Int → Int → Array HarvestSpot → Int
-findLowestNHarv n nInd ind []  = nInd
-findLowestNHarv n nInd ind arr = case uncons arr of
+findMostOpenHarvs ∷ Int → Int → Int → Array HarvestSpot → Int
+findMostOpenHarvs n nInd ind []  = nInd
+findMostOpenHarvs n nInd ind arr = case uncons arr of
   Nothing → nInd
   Just {head:(HarvestSpot {sourceName, nHarvs, nMaxHarvs, harvSpots}),tail:t} →
-    if nHarvs < n then findLowestNHarv nHarvs ind  (ind + 1) t
-    else               findLowestNHarv n      nInd (ind + 1) t
+    if (nMaxHarvs - nHarvs) > n then
+         findMostOpenHarvs (nMaxHarvs - nHarvs) ind  (ind + 1) t
+    else findMostOpenHarvs n                    nInd (ind + 1) t
 
 -- | sets harvest spot memory when creep targets source
 setNHarvs ∷ Array HarvestSpot → Id Source → Spawn → CG Env Unit
