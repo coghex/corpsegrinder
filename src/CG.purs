@@ -207,10 +207,6 @@ freeCreepMem n = do
   memory ← asks (_.memory)
   liftEffect $ Memory.freeCreep memory n
 
--- | clears a single field of creep data, at a ffi level
-freeCreepMemField ∷ Creep → String → CG Env Unit
-freeCreepMemField creep str = liftEffect $ FFI.unsafeDeleteFieldEff str creep
-
 -- | some other creep functions
 creepHarvest ∷ ∀ α. Creep → RoomObject α → CG Env ReturnCode
 creepHarvest creep obj = liftEffect $ Creep.harvest creep obj
@@ -218,6 +214,8 @@ transferResourceTo ∷ ∀ α. Creep → RoomObject α → ResourceType → CG E
 transferResourceTo creep obj rsc = liftEffect $ Creep.transfer creep obj rsc
 moveCreepTo ∷ ∀ α. Creep → TargetPosition α → CG Env ReturnCode
 moveCreepTo creep pos = liftEffect $ Creep.moveTo creep pos
+moveCreep ∷ Creep → Direction → CG Env ReturnCode
+moveCreep creep dir = liftEffect $ Creep.move creep dir
 creepBuild ∷ Creep → ConstructionSite → CG Env ReturnCode
 creepBuild creep site = liftEffect $ Creep.build creep site
 creepUpgrade ∷ Creep → Controller → CG Env ReturnCode

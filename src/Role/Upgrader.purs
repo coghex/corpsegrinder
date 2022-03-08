@@ -9,8 +9,8 @@ import Screeps.RoomObject as RO
 import Screeps.Store as Store
 import Screeps.Room as Room
 import Screeps.Const (resource_energy, err_not_in_range)
-import Creep.Peon (getEnergy, storeEnergy, creepFull, creepEmpty
-                  , creepHasEnergy, creepSpaceForEnergy)
+import Creep.Peon (getEnergy, storeEnergy)
+import Creep (creepFull, creepEmpty, creepHasEnergy, creepSpaceForEnergy)
 import Foreign.Object as F
 import CG
 

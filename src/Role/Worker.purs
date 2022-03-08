@@ -13,4 +13,3 @@ preformWorker creep (JobRepair structId) = preformJobRepair creep $ Id structId
 -- are outside of the standard processor (changing roles is always fine)
 preformWorker creep JobNULL              = do
   setCreepMem creep "role" RoleIdle
-  freeCreepMemField creep "repairing"

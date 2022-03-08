@@ -14,7 +14,8 @@ import Data
 import CG
 import Util (needsRepair)
 import Maths (subtractSet)
-import Creep.Peon (getEnergy, creepFull, creepHasEnergy, creepEmpty)
+import Creep.Peon (getEnergy)
+import Creep (creepFull, creepHasEnergy, creepEmpty)
 
 -- | creates new repair jobs
 manageRepairJobs ∷ Spawn → CG Env Unit

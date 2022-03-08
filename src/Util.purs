@@ -16,7 +16,8 @@ import Screeps.Structure ( structureType, hits, hitsMax )
 import Screeps.ConstructionSite as CS
 import Screeps.Store as Store
 import Screeps.Const ( resource_energy, find_my_construction_sites
-                     , find_structures, structure_container )
+                     , find_structures, structure_container
+                     , terrain_mask_wall )
 import Foreign.Object as F
 import Maths (distance, findMin, removeVal)
 import Data
@@ -64,14 +65,12 @@ spotAvailable ∷ HarvestSpot → Boolean
 spotAvailable (HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots })
   = nHarvs ≤ nMaxHarvs
 
--- | finds a random open source
-findOpenSource ∷ Array HarvestSpot → Array Source → Int → Maybe Source
-findOpenSource _        []  _    = Nothing
-findOpenSource harvData arr rand = case hData of
+-- | finds an open source
+findOpenSource ∷ Array HarvestSpot → Array Source → Maybe Source
+findOpenSource _        []  = Nothing
+findOpenSource harvData arr = case hData of
     Nothing → Nothing
---    Just hd → if (spotAvailable hd) then index arr ind
     Just hd → index arr ind
---              else findOpenSource harvData arr' rand
     where ind   = findMostOpenHarvs (-100) (-100) 0 harvData
           arr'  = case (deleteAt ind arr) of
                     Nothing → []
@@ -145,6 +144,9 @@ posEqSpot pos (Spot {spotType,spotX,spotY}) =
 
 spotToPos ∷ String → Spot → RoomPosition
 spotToPos room (Spot {spotType,spotX,spotY}) = RP.createRoomPosition spotX spotY room
+-- TODO: this needs to find the tile type
+posToSpot ∷ RoomPosition → Spot
+posToSpot rp = Spot {spotType:SpotPlain,spotX:(RP.x rp),spotY:(RP.y rp)}
 
 hasFreeSpace ∷ ∀ α. Structure α → Boolean
 hasFreeSpace structure
@@ -184,6 +186,7 @@ iHarvest roles key _ = case (F.lookup key roles) of
   Nothing → false
   Just v0 → case v0 of
               RoleHarvester            → true
+              RoleCollier              → true
               RoleUpgrader             → true
               RoleBuilder _            → true
               RoleWorker (JobRepair _) → true

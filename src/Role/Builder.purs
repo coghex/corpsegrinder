@@ -20,8 +20,8 @@ import Screeps.Source as Source
 import Screeps.Structure ( structureType )
 import Foreign.Object as F
 import Util (findNearest, findNearestOpenSource, setNHarvs, removeNHarvs)
-import Creep.Peon (getEnergy, creepSpaceForEnergy, creepFull
-                  , creepEmpty, creepHasEnergy)
+import Creep.Peon (getEnergy)
+import Creep (creepFull, creepEmpty, creepHasEnergy, creepSpaceForEnergy)
 import CG
 
 -- | a builder moves between mining for energy and building construction sites
