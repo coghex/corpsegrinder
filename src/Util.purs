@@ -4,8 +4,6 @@ import UPrelude
 import Data.Array (index, head, tail, uncons, zip, length, deleteAt)
 import Data.Int (quot)
 import Data.Tuple (Tuple(..))
-import Data.Maybe (Maybe(..))
-import Data.Either (Either(..))
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (getField)
 import Screeps.Data

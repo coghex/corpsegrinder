@@ -2,8 +2,6 @@ module Screeps.RoomPosition where
 
 import UPrelude
 import Effect (Effect)
-import Data.Either (Either)
-import Data.Maybe (Maybe)
 import Screeps.Data
 import Screeps.FFI
 

@@ -2,7 +2,6 @@ module Screeps.Game where
 
 import UPrelude
 import Effect (Effect)
-import Data.Maybe (Maybe)
 import Data.Map as M
 import Foreign.Object as F
 import Screeps.Data

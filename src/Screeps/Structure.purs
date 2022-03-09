@@ -2,7 +2,6 @@ module Screeps.Structure where
 
 import UPrelude
 import Effect (Effect)
-import Data.Maybe (Maybe(..))
 import Screeps.Data
 import Screeps.FFI
 

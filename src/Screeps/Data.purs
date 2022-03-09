@@ -6,7 +6,6 @@ import Data.Eq ( class Eq )
 import Data.Eq.Generic ( genericEq )
 import Data.Show ( class Show )
 import Data.Show.Generic ( genericShow )
-import Data.Maybe ( Maybe(..) )
 import Data.Either ( note )
 import Data.String ( length, take, drop )
 import Data.Map as M

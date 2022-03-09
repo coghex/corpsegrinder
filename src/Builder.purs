@@ -4,7 +4,6 @@ import UPrelude
 import Control.Monad.Reader (asks)
 import Data.Argonaut.Core (Json)
 import Data.Array (length, uncons, take, index, head, tail, reverse)
-import Data.Maybe (Maybe(..))
 import Foreign.Object as F
 import Screeps.Data
 import Screeps.Room as Room

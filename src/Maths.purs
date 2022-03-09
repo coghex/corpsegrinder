@@ -2,7 +2,6 @@ module Maths where
 
 import UPrelude
 import Math (sqrt)
-import Data.Maybe (Maybe(..))
 import Data.Array (uncons, length, reverse, elem
                   , head, tail, drop, take)
 import Data.Int(round, toNumber, quot)

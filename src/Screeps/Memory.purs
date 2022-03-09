@@ -7,7 +7,6 @@ import Screeps.FFI ( unsafeGetFieldEff, unsafeSetFieldEff
 import Screeps.Creep ( unsafeDeleteCreepEff )
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, JsonDecodeError)
-import Data.Either (Either)
 import Screeps.Data (MemoryGlobal, RawMemoryGlobal)
 
 foreign import getMemoryGlobal ∷ Effect MemoryGlobal

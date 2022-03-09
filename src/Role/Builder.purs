@@ -2,8 +2,6 @@ module Role.Builder where
 import UPrelude
 import Control.Monad.Reader (asks)
 import Data.Array (index, length, head)
-import Data.Maybe (Maybe(..))
-import Data.Either (Either(..))
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (JsonDecodeError, getField)
 import Screeps.Const ( err_not_in_range, find_sources, find_my_spawns
@@ -21,7 +19,7 @@ import Screeps.Structure ( structureType )
 import Foreign.Object as F
 import Util (findNearest, findNearestOpenSource, setNHarvs, removeNHarvs)
 import Creep.Peon (getEnergy)
-import Creep (creepFull, creepEmpty, creepHasEnergy, creepSpaceForEnergy)
+import Creep.Util (creepFull, creepEmpty, creepHasEnergy, creepSpaceForEnergy)
 import CG
 
 -- | a builder moves between mining for energy and building construction sites

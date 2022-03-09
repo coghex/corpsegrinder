@@ -8,8 +8,6 @@ import Data.Array ( index, uncons, filter, foldr
 import Data.Argonaut.Core ( Json )
 import Data.Argonaut.Encode ( encodeJson )
 import Data.Argonaut.Decode ( decodeJson )
-import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
 import Screeps.Data
 import Foreign.Object as F
 import Screeps.Game as Game

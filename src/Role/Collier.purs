@@ -2,7 +2,6 @@ module Role.Collier where
 import UPrelude
 import Control.Monad.Reader (asks)
 import Data.Array (head)
-import Data.Maybe (Maybe(..))
 import Screeps.Data
 import Screeps.Room as Room
 import Screeps.RoomObject as RO

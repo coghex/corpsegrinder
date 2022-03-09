@@ -1,9 +1,7 @@
 module Preformer where
 
 import UPrelude
-import Control.Monad.Reader (asks)
-import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
+import Control.Monad.Reader (asks, ask)
 import Data.Array (uncons)
 import Data.Tuple (Tuple(..))
 import Data.Argonaut.Core (Json)
@@ -11,6 +9,8 @@ import Data.Argonaut.Decode (getField)
 import Screeps.Data
 import Foreign.Object as F
 import Screeps.Game as Game
+import Screeps.RoomObject as RO
+import Screeps.Creep as Creep
 import Screeps.Structure.Spawn as Spawn
 import Screeps.Store as Store
 import Screeps.Const (resource_energy, pWork, pMove, pCarry)
@@ -19,8 +19,10 @@ import Role.Collier (preformCollier)
 import Role.Upgrader (preformUpgrader)
 import Role.Builder (preformBuilder)
 import Role.Worker (preformWorker)
+import Util (posToSpot)
 import Data
 import CG
+import Creep
 
 -- | creeps change their roles here
 preformCreeps ∷ CG Env Unit
@@ -54,12 +56,20 @@ preformRole key role = do
   let creep = F.lookup key (Game.creeps game)
   case creep of
     Nothing → pure unit
-    Just c0 → preformRoleF c0 role
-preformRoleF ∷ Creep → Role → CG Env Unit
-preformRoleF creep RoleIdle        = pure unit
-preformRoleF creep RoleHarvester   = preformHarvester creep
-preformRoleF creep (RoleWorker j)  = preformWorker    creep j
-preformRoleF creep (RoleBuilder _) = preformBuilder   creep
-preformRoleF creep RoleUpgrader    = preformUpgrader  creep
-preformRoleF creep RoleCollier     = preformCollier   creep
-preformRoleF creep RoleNULL        = pure unit
+    Just c0 → do
+      mem ← getAllCreepMem c0
+      case mem of
+        Nothing → pure unit
+        Just m0 → preformRoleF c0 role m0
+preformRoleF ∷ Creep → Role → F.Object Json → CG Env Unit
+preformRoleF creep RoleIdle         mem = pure unit
+preformRoleF creep RoleHarvester    mem =
+  runCreepEnv (preformHarvester creep) { creep:creep, mem:mem, room:room }
+  where room = RO.room creep
+preformRoleF creep (RoleWorker j)   mem = preformWorker    creep j
+preformRoleF creep (RoleBuilder _)  mem = preformBuilder   creep
+preformRoleF creep RoleUpgrader     mem =
+  runCreepEnv (preformUpgrader creep)  { creep:creep, mem:mem, room:room }
+  where room = RO.room creep
+preformRoleF creep RoleCollier      mem = preformCollier   creep
+preformRoleF creep RoleNULL         mem = pure unit

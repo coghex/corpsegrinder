@@ -2,7 +2,6 @@ module Screeps.Room where
 
 import UPrelude
 import Effect (Effect)
-import Data.Either (Either(..))
 import Screeps.Data
 import Screeps.FFI
 

@@ -4,7 +4,6 @@ module Creep.Peon where
 import UPrelude
 import Control.Monad.Reader (asks)
 import Data.Array (head, uncons, length)
-import Data.Maybe (Maybe(..))
 import Screeps.Data
 import Screeps.Creep as Creep
 import Screeps.Game as Game
@@ -18,7 +17,7 @@ import Util (findNearest, findNearestOpenSource
             , setNHarvs, hasFreeSpace
             , removeNHarvs, findOpenSource
             , posToSpot, spotToPos, posEqSpot)
-import Creep (creepFull, findAndSetDestAndTarget)
+import Creep.Util (creepFull, findAndSetDestAndTarget)
 import Data
 import CG
 
@@ -178,5 +177,3 @@ peonDeposit creep = do
             setCreepMem creep "harvesting" true
             dest ← findAndSetDestAndTarget RoleHarvester creep
             peonMove creep dest
-
-

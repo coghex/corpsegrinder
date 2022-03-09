@@ -2,8 +2,13 @@ module Spawn where
 
 import UPrelude
 import Control.Monad.Reader (asks)
-import Data.Maybe (Maybe(..))
 import Data.Array (uncons, length, filter, head)
+import Data.Newtype (class Newtype)
+import Data.Argonaut.Core (Json)
+import Data.Argonaut.Decode (class DecodeJson)
+import Data.Argonaut.Encode (class EncodeJson)
+import Control.Monad.Reader.Class (class MonadAsk, class MonadReader)
+import Control.Monad.Trans.Class (class MonadTrans, lift)
 import Screeps.Data
 import Screeps.Const (find_sources)
 import Screeps.Game as Game
@@ -20,19 +25,55 @@ import Util (isStorable)
 import Data
 import CG
 
-initSpawn ∷ CG Env Unit
+type SpawnEnv = { spawn ∷ Spawn
+                , mem   ∷ F.Object Json }
+newtype SE ε m α = SE (SpawnEnv → m α)
+runSpawnEnv ∷ ∀ m α. SE SpawnEnv m α → SpawnEnv → m α
+runSpawnEnv (SE se) = se
+derive instance newtypeSE ∷ Newtype (SE ε m α) _
+instance functorSE ∷ Functor m ⇒ Functor (SE ε m) where
+  map = mapSpawnEnv <<< map
+mapSpawnEnv ∷ ∀ ε m1 m2 α β. (m1 α → m2 β) → SE ε m1 α → SE ε m2 β
+mapSpawnEnv f (SE m) = SE (f <<< m)
+instance applicativeSE ∷ Applicative m ⇒ Applicative (SE ε m) where
+  pure = SE <<< const <<< pure
+instance monadSE ∷ Monad m ⇒ Monad (SE ε m)
+instance bindSE ∷ Bind m ⇒ Bind (SE ε m) where
+  bind (SE m) f = SE \r → m r >>= \a → case f a of
+    SE f' → f' r
+instance applySE ∷ Apply m ⇒ Apply (SE ε m) where
+  apply (SE f) (SE m) = SE \e → f e <*> m e
+instance monadReaderSE ∷ (Monad m) ⇒ MonadReader SpawnEnv (SE ε m) where
+  local f (SE m) = SE (m <<< f)
+instance monadAskSE ∷ (Monad m) ⇒ MonadAsk SpawnEnv (SE ε m) where
+  ask = SE pure
+instance monadTransSE ∷ MonadTrans (SE ε) where
+  lift = SE <<< const
+
+-- special case where we are wrapping spawn into CG
+type Spwn α = SE SpawnEnv (CG Env) α
+
+log'' ∷ LogLevel → String → SE SpawnEnv (CG Env) Unit
+log'' lvl str = lift $ log' lvl str
+
+-- | some functions lifted from CG
+getMemField' ∷ ∀ α. (DecodeJson α) ⇒ String → SE SpawnEnv (CG Env) (Maybe α)
+getMemField' field = lift $ getMemField field
+setMemField' ∷ ∀ α. (EncodeJson α) ⇒ String → α → SE SpawnEnv (CG Env) Unit
+setMemField' field val = lift $ setMemField field val
+freeCreepMem' ∷ String → SE SpawnEnv (CG Env) Unit
+freeCreepMem' n = lift $ freeCreepMem n
+
+initSpawn ∷ SE SpawnEnv (CG Env) Unit
 initSpawn = do
-  game ← asks (_.game)
-  let spawnsList = Game.spawns game
-  -- TODO: generalize the following
-      spawn1     = F.lookup "Spawn1" spawnsList
-  case spawn1 of
-    Nothing → pure unit
-    Just s1 → do
-      let r            = RO.room s1
-          harvestSpots = findAllHarvestSpots r sources
-          sources      = Room.find r find_sources
-      setSpawnMem s1 "harvestSpots" harvestSpots
+  spawn1 ← asks (_.spawn)
+  let r            = RO.room spawn1
+      harvestSpots = findAllHarvestSpots r sources
+      sources      = Room.find r find_sources
+  setSpawnMem' spawn1 "harvestSpots" harvestSpots
+
+setSpawnMem' ∷ ∀ α. (EncodeJson α) ⇒ Spawn → String → α → SE SpawnEnv (CG Env) Unit
+setSpawnMem' spawn field val = lift $ setSpawnMem spawn field val
 
 findAllHarvestSpots ∷ Room → Array Source → Array HarvestSpot
 findAllHarvestSpots _    []      = []

@@ -1,7 +1,7 @@
 module Screeps.FFI where
-import Prelude
+import UPrelude
 import Effect (Effect)
-import Data.Maybe (Maybe(..), isJust, fromJust, maybe)
+import Data.Maybe (isJust, fromJust, maybe)
 import Data.Function.Uncurried ( Fn3, runFn3 )
 import Partial.Unsafe (unsafePartial)
 

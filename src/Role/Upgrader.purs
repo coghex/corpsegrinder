@@ -1,45 +1,64 @@
 module Role.Upgrader where
 import UPrelude
-import Data.Maybe (Maybe(..))
-import Data.Either (Either(..))
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode (getField)
+import Control.Monad.Trans.Class (lift)
 import Screeps.Data
 import Screeps.RoomObject as RO
 import Screeps.Store as Store
 import Screeps.Room as Room
-import Screeps.Const (resource_energy, err_not_in_range)
-import Creep.Peon (getEnergy, storeEnergy)
-import Creep (creepFull, creepEmpty, creepHasEnergy, creepSpaceForEnergy)
+import Screeps.Const ( resource_energy, err_not_in_range )
+import Creep.Peon ( getEnergy, storeEnergy, peonMove, peonHarvest )
+import Creep.Util
 import Foreign.Object as F
+import Data ( Role(..) )
+import Util ( spotToPos )
+import Creep
 import CG
 
 -- | a harvester moves between energy source and extension, spawn, or tower
 --   the simplest role
-preformUpgrader ∷ Creep → CG Env Unit
+preformUpgrader ∷ Creep → CE CreepEnv (CG Env) Unit
 preformUpgrader creep = do
-  mem ← getAllCreepMem creep
+  mem ← lift $ getAllCreepMem creep
   case mem of
     Nothing → pure unit
-    Just d0 → preformUpgraderF creep d0
+    Just d0 → lift $ preformUpgraderF creep d0
 preformUpgraderF ∷ Creep → F.Object Json → CG Env Unit
 preformUpgraderF creep mem = do
-  case (getField mem "upgrading") of
-    Left _ → do
+  moving ← case (getField' mem "moving") of
+    Nothing → do
+      setCreepMem creep "moving" true
+      pure true
+    Just m0 → pure m0
+  if moving then do
+    dest' ← getCreepMem creep "dest"
+    case dest' of
+      Nothing → do
+        dest ← findAndSetDestAndTarget RoleUpgrader creep
+        peonMove creep dest
+      Just dest → peonMove creep $ spotToPos room dest
+        where room = Room.name (RO.room creep)
+  else case (getField' mem "upgrading") of
+    Nothing → do
       setCreepMem creep "upgrading" false
       preformUpgraderFF creep false
-    Right building → preformUpgraderFF creep building
+    Just building → preformUpgraderFF creep building
 preformUpgraderFF ∷ Creep → Boolean → CG Env Unit
-preformUpgraderFF creep upgrading =
-  if upgrading then do
-    if creepEmpty creep then setCreepMem creep "upgrading" false
-    else if creepHasEnergy creep then do
-      let controller = Room.controller (RO.room creep)
-      res ← creepUpgrade creep controller
-      if (res ≡ err_not_in_range) then do
-        ret ← moveCreepTo creep (TargetObj controller)
-        pure unit
-      else pure unit
-    else pure unit
-  else if creepFull creep then setCreepMem creep "upgrading" true
-  else getEnergy creep
+preformUpgraderFF creep true  =
+  if creepEmpty creep then do
+    setCreepMem creep "upgrading" false
+    setCreepMem creep "moving"    true
+    dest ← findAndSetDestAndTarget RoleUpgrader creep
+    peonMove creep dest
+  else do
+    let controller = Room.controller (RO.room creep)
+    res ← creepUpgrade creep controller
+    pure unit
+preformUpgraderFF creep false =
+  if creepFull creep then do
+    setCreepMem creep "upgrading" true
+    setCreepMem creep "moving"    true
+    dest ← findAndSetDestAndTarget RoleUpgrader creep
+    peonMove creep dest
+  else peonHarvest creep

@@ -2,12 +2,12 @@ module Screeps.Structure.Spawn where
 
 import UPrelude
 import Effect (Effect)
-import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
-import Screeps.Data
-import Screeps.FFI
+import Data.Argonaut.Core (Json)
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, JsonDecodeError)
+import Screeps.Data
+import Screeps.FFI
+import Foreign.Object as F
 
 foreign import createCreepImpl ∷ Spawn → Array BodyPartType
   → (ReturnCode → Either ReturnCode String)
@@ -17,7 +17,7 @@ foreign import createCreepPrimeImpl ∷ ∀ mem. Spawn → Array BodyPartType
   → NullOrUndefined String → mem → (ReturnCode → Either ReturnCode String)
   → (String → Either ReturnCode String) → Effect (Either ReturnCode String)
 
-memory ∷ ∀ α. Spawn → { | α }
+memory ∷ Spawn → F.Object Json --∀ α. Spawn → { | α }
 memory = unsafeField "memory"
 
 setMemory ∷ ∀ α. (EncodeJson α) ⇒ Spawn → String → α → Effect Unit

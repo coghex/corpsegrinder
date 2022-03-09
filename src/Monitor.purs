@@ -1,6 +1,5 @@
 module Monitor where
 import UPrelude
-import Data.Maybe (Maybe(..))
 import Data.Array (uncons, head, tail, length, elem, union)
 import Control.Monad.Reader (asks)
 import Screeps.Data

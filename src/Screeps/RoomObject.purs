@@ -1,7 +1,6 @@
 module Screeps.RoomObject where
 
 import UPrelude
-import Data.Maybe (Maybe)
 import Screeps.Data
 import Screeps.FFI
 

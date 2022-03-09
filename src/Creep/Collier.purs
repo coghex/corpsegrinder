@@ -3,7 +3,6 @@ module Creep.Collier where
 
 import UPrelude
 import Control.Monad.Reader (asks)
-import Data.Maybe (Maybe(..))
 import Data.Array (uncons)
 import Screeps.Game as Game
 import Screeps.Room as Room

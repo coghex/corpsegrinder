@@ -11,8 +11,6 @@ import Control.Monad.Reader ( asks )
 import Data.DateTime as DT
 import Data.Date as Date
 import Data.Time as Time
-import Data.Maybe (Maybe(..))
-import Data.Either (Either(..))
 import Data.Enum (fromEnum)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Encode (class EncodeJson)
@@ -37,7 +35,10 @@ import Data.Newtype (class Newtype)
 import Data (ContainerMemory(..))
 
 -- read only environment
-type Env = { memory ∷ MemoryGlobal, game ∷ GameGlobal, pf ∷ PathFinder }
+type Env = { memory ∷ MemoryGlobal
+           , game   ∷ GameGlobal
+           , pf     ∷ PathFinder
+           , time   ∷ Int }
 
 -- continuation monad
 newtype CG ε α = CG (Env → Effect α)
@@ -82,8 +83,8 @@ instance bindCG ∷ Bind (CG ε) where
     CG f' → f' r <#> \res → res
 instance applyCG ∷ Apply (CG ε) where
   apply (CG f) (CG m) = CG \r → f r >>= \f' → m r <#> \a'' → f' a''
--- instance monadTransCG ∷ MonadTrans (CG Env) where
---   lift m = CG \_ → m >>= \a → pure $ CGResult a
+--instance monadTransCG ∷ MonadTrans (CG ε) where
+--  lift m = CG $ \_ → m >>= \a → pure $ a
 -- instance lazyCG ∷ Lazy (CG Env m α) where
 --   defer f = CG \r → case f unit of CG f' → f' r
 instance monadEffectCG ∷ MonadEffect (CG ε) where

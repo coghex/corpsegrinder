@@ -8,7 +8,6 @@ import Data.Argonaut.Encode (class EncodeJson, encodeJson, (:=), (~>))
 import Data.Int ( fromString )
 import Data.String ( length, take, drop )
 import Data.Either ( note )
-import Data.Maybe ( Maybe(..) )
 import Screeps.Data
 
 data    LoopStatus = LoopGo

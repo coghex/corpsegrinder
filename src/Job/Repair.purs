@@ -3,7 +3,6 @@ module Job.Repair where
 import UPrelude
 import Data.Argonaut.Core (Json)
 import Data.Array (length, filter, uncons)
-import Data.Maybe (Maybe(..))
 import Foreign.Object as F
 import Screeps.Data
 import Screeps.Structure as Structure
@@ -15,7 +14,7 @@ import CG
 import Util (needsRepair)
 import Maths (subtractSet)
 import Creep.Peon (getEnergy)
-import Creep (creepFull, creepHasEnergy, creepEmpty)
+import Creep.Util (creepFull, creepHasEnergy, creepEmpty)
 
 -- | creates new repair jobs
 manageRepairJobs ∷ Spawn → CG Env Unit

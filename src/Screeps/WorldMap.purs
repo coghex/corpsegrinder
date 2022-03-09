@@ -3,7 +3,6 @@ module Screeps.WorldMap where
 import UPrelude
 import Screeps.Data
 import Screeps.FFI
-import Data.Maybe (Maybe)
 
 describeExits ∷ WorldMap → String → Maybe ExitsInfo
 describeExits = runThisFn1 "describeExits"

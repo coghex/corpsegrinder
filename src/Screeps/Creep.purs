@@ -2,7 +2,6 @@ module Screeps.Creep where
 
 import UPrelude
 import Effect (Effect)
-import Data.Either (Either)
 import Screeps.Data
 import Screeps.FFI
 import Data.Argonaut.Decode (class DecodeJson, decodeJson, JsonDecodeError)
