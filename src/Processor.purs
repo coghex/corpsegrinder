@@ -6,12 +6,15 @@ import Control.Monad.Reader ( asks )
 import Data.Argonaut.Core ( Json )
 import Data.Argonaut.Encode ( encodeJson )
 import Data.Argonaut.Decode ( decodeJson )
-import Data.Array ( index, uncons )
+import Data.Array ( index, uncons, length )
 import Data.Int ( quot, round, toNumber )
-import Foreign.Object as F
-import Screeps.Creep  as Creep
-import Screeps.Game   as Game
+import Foreign.Object     as F
+import Screeps.Creep      as Creep
+import Screeps.Game       as Game
+import Screeps.Room       as Room
+import Screeps.RoomObject as RO
 import Screeps.Data
+import Screeps.Const (find_construction_sites)
 import Spawn
 import Creep
 import Data
@@ -59,7 +62,7 @@ processCreep = do
         ind      = findInd roleList alt 0
         newRole  = Just $ encodeJson alt
         alt      = bestRole scores roleList 0 RoleNULL
-        scores   = map (calcRoleScore creepU0 creepPos energyNeed
+        scores   = map (calcRoleScore creepU0 creepPos energyNeed numCS
                                       jobs creeps type0 role0) roleList
         type0    = case type0' of
                      Nothing → CreepNULL
@@ -77,6 +80,8 @@ processCreep = do
         energyNeed  = round $ 100.0 * energyNeed'
         energyNeed' = (toNumber (energyFreeSpace spawns))
                     / (toNumber $ (energyCapacity spawns) + 1)
+        numCS       = length constSites
+        constSites  = Room.find (RO.room creep0Obj) find_construction_sites
         spawns      = Game.spawns game
     newCreep ← switchRole alt
     setCreepMem' newCreep
@@ -199,25 +204,26 @@ bestRole scores roles score role = if (score' > score) then bestRole scores' rol
 
 -- | finds the score for a given role for a given creep, averages with current score
 --   first checks creep type as different creep types value roles differently
-calcRoleScore ∷ ∀ α. Int → TargetPosition α → Int → Array Job → F.Object (F.Object Json) → CreepType → Role → Role → Int
-calcRoleScore _    _   _          _    _      CreepPeon _     RoleNULL        = 0
-calcRoleScore _    _   _          _    _      CreepPeon _     RoleIdle        = 1
-calcRoleScore utl0 pos energyNeed jobs creeps CreepPeon role0 RoleUpgrader    = avgScores utl0 score
+calcRoleScore ∷ ∀ α. Int → TargetPosition α → Int → Int
+  → Array Job → F.Object (F.Object Json) → CreepType → Role → Role → Int
+calcRoleScore _    _   _          _     _    _      CreepPeon _     RoleNULL        = 0
+calcRoleScore _    _   _          _     _    _      CreepPeon _     RoleIdle        = 1
+calcRoleScore utl0 pos energyNeed numCS jobs creeps CreepPeon role0 RoleUpgrader    = avgScores utl0 score
   where score     = 1000 `quot` ((3*upgraders) + 1)
         upgraders = iDoThat + numberOfRole RoleUpgrader creeps
         iDoThat   = case role0 of
                       RoleUpgrader → -1
                       _            → 0
-calcRoleScore utl0 pos energyNeed jobs creeps CreepPeon role0 RoleBuilder = avgScores utl0 score
-  where score    = 1000 `quot` (builders + 1)
+calcRoleScore utl0 pos energyNeed numCS jobs creeps CreepPeon role0 RoleBuilder = avgScores utl0 score
+  where score    = numCS * 800 `quot` (builders + 1)
         builders = iDoThat + numberOfRole RoleBuilder creeps
         iDoThat  = case role0 of
                      RoleBuilder → -1
                      _           → 0
-calcRoleScore utl0 pos energyNeed jobs creeps CreepPeon role0 (RoleWorker _)  = avgScores utl0 score
+calcRoleScore utl0 pos energyNeed numCS jobs creeps CreepPeon role0 (RoleWorker _)  = avgScores utl0 score
   where score     = calcJobValue jobvalue
         jobvalue  = calcBestJob pos jobs
-calcRoleScore utl0 pos energyNeed jobs creeps CreepPeon role0 RoleHarvester   = avgScores utl0 score
+calcRoleScore utl0 pos energyNeed numCS jobs creeps CreepPeon role0 RoleHarvester   = avgScores utl0 score
 -- we wont ever really need more than a couple
   where score   = (100*energyNeed) `quot` ((2*harvs) + 1)
 
@@ -225,8 +231,8 @@ calcRoleScore utl0 pos energyNeed jobs creeps CreepPeon role0 RoleHarvester   = 
         iDoThat = case role0 of
                     RoleHarvester → -1
                     _             → 0
-calcRoleScore utl0 pos energyNeed jobs creeps CreepCollier role0 RoleCollier  = 1000
-calcRoleScore _    _   _          _    _      _         _     _               = 0
+calcRoleScore utl0 pos energyNeed numCS jobs creeps CreepCollier role0 RoleCollier  = 1000
+calcRoleScore _    _   _          _     _    _      _         _     _               = 0
 
 -- | job value is based on distance and type of job
 calcBestJob ∷ ∀ α. TargetPosition α → Array Job → Maybe Job
