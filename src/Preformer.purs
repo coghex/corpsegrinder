@@ -1,8 +1,8 @@
 module Preformer where
 
 import UPrelude
-import Data.Tuple ( Tuple(..), snd )
-import Data.Array ( uncons, head, tail )
+import Data.Tuple ( Tuple(..), fst, snd )
+import Data.Array ( uncons, head, tail, length )
 import Foreign.Object as F
 import Screeps.Data
 import Role.Harvester ( preformHarvester )
@@ -26,6 +26,7 @@ preformCreepsF creeps = case uncons creeps of
     case m of
       Nothing → log'' LogError "creep lost its memory"
       Just m0 → runCE preformCreep { creep:snd h, mem:m0 }
+    preformCreepsF t
 preformCreep ∷ Crp Unit
 preformCreep = do
   role ← getCreepMemField "role"
