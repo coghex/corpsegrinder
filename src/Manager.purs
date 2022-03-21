@@ -16,28 +16,28 @@ import Screeps.RoomObject as RO
 import Screeps.Const ( resource_energy, find_structures, find_sources
                      , structure_container, pWork, pMove, pCarry, pAttack)
 import Data
-import CG
+import CorpseGrinder
 import Spawn
-import Util ( iHarvest, makeRoleArray, makeCreepTypeArray
-            , structIsType, creepIsType)
-import Job.Repair (manageRepairJobs)
+import Util ( iHarvest, structIsType, creepIsType, makeCreepTypeArray)
+--import Job.Repair (manageRepairJobs)
 
 -- | jobs are created here
-manageJobs ∷ CG Env Unit
+manageJobs ∷ Spwn Unit
 manageJobs = do
-  game ← asks (_.game)
+  game ← lift $ asks (_.game)
   let spawnslist      = Game.spawns      game
       creeps          = Game.creeps      game
       gcl             = Game.gcl         game
       spawn1          = F.lookup "Spawn1" spawnslist
   case spawn1 of
     -- there is no spawn yet, so just repeat this check here
-    Nothing → setMemField "loopStatus" LoopStart
+    Nothing → setMemField' "loopStatus" LoopStart
     Just s1 → do
-      manageRepairJobs s1
+      --manageRepairJobs s1
+      pure unit
 
 -- | creeps are created here
-manageCreeps ∷ SE SpawnEnv (CG Env) Unit
+manageCreeps ∷ Spwn Unit
 manageCreeps = do
   game   ← lift $ asks (_.game)
   spawn1 ← asks (_.spawn)
@@ -51,7 +51,7 @@ manageCreeps = do
       availableEnergy = Store.getUsedCapacity' spawnStore resource_energy
       energyCapacity  = Store.getCapacity'     spawnStore resource_energy
       spawnStore      = Spawn.store            spawn1
-  CreepCounts {nPeon,nCollier,nHauler,nGrunt} ← lift $ calcMaxCreeps numSources spawn1
+  CreepCounts {nPeon,nCollier,nHauler,nGrunt} ← calcMaxCreeps numSources
   creepMem   ← getMemField' "creeps"
   let nMaxCreeps = nPeon + nCollier + nHauler + nGrunt
       numPeons = case creepMem of
@@ -82,9 +82,10 @@ manageCreeps = do
   else pure unit
 
 -- | finds the maximum number of creeps at different levels
-calcMaxCreeps ∷ Int → Spawn → CG Env CreepCounts
-calcMaxCreeps n spawn = do
-  ret ← getSpawnMem spawn "harvestSpots"
+calcMaxCreeps ∷ Int → Spwn CreepCounts
+calcMaxCreeps n = do
+  ret ← getSpawnMem' "harvestSpots"
+  spawn ← asks (_.spawn)
   case ret of
     Nothing → pure $ CreepCounts { nPeon: 0, nCollier: 0, nHauler: 0, nGrunt: 0 }
     Just h0 → do
@@ -103,7 +104,7 @@ addHarvestSpots (HarvestSpot {sourceName, nHarvs, nMaxHarvs, harvSpots}) n
   = n + nMaxHarvs
 
 -- | basic creep creation function
-createCreep ∷ Spawn → CreepType → Int → Int → SE SpawnEnv (CG Env) Unit
+createCreep ∷ Spawn → CreepType → Int → Int → Spwn Unit
 createCreep spawn CreepPeon    nrg cap =
   if cap > 350 then
     if nrg > 350 then
@@ -148,10 +149,10 @@ createCreep _     _            _   cap = log'' LogWarn "i dont know how to creat
 
 -- | pattern match helper function
 spawnCreepWith ∷ Spawn → Array BodyPartType
-  → Role → CreepType → SE SpawnEnv (CG Env) Unit
+  → Role → CreepType → Spwn Unit
 spawnCreepWith spawn parts r t = do
     let h = Structure.id spawn
-    res ← lift $ spawnCreep spawn parts Nothing { typ: t, role: r, home: h, utility: 0, path:([] ∷ Path) }
+    res ← spawnCreep' parts Nothing { typ: t, role: r, home: h, utility: 0, path:([] ∷ Path) }
     case res of
         Nothing → log'' LogWarn  "cant create creep"
         Just s0 → log'' LogDebug $ s0 <> " created succesfully"

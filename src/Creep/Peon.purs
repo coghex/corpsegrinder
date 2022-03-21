@@ -1,179 +1,180 @@
 module Creep.Peon where
--- ^ peons are the lowest level of creep
-
 import UPrelude
-import Control.Monad.Reader (asks)
-import Data.Array (head, uncons, length)
-import Screeps.Data
-import Screeps.Creep as Creep
-import Screeps.Game as Game
-import Screeps.Room as Room
+import Control.Monad.Reader ( asks )
+import Control.Monad.Trans.Class ( lift )
+import Data.Array ( uncons, length )
+import Screeps.Source     as Source
+import Screeps.Creep      as Creep
+import Screeps.Game       as Game
+import Screeps.Room       as Room
 import Screeps.RoomObject as RO
-import Screeps.Source as Source
-import Screeps.Const (find_sources, find_my_spawns
-                     , find_structures, resource_energy
-                     , err_not_in_range, ok)
-import Util (findNearest, findNearestOpenSource
-            , setNHarvs, hasFreeSpace
-            , removeNHarvs, findOpenSource
-            , posToSpot, spotToPos, posEqSpot)
-import Creep.Util (creepFull, findAndSetDestAndTarget)
+import Screeps.Data
+import Screeps.Const ( find_structures, find_sources
+                     , find_my_spawns, ok, err_not_in_range
+                     , resource_energy )
+import Creep.Util
+import Util ( spotToPos, posToSpot, posEqSpot, findOpenSource
+            , setNHarvs, hasFreeSpace, findNearest )
+import Spawn ( getSpawnMem' )
+import Creep
+import CorpseGrinder ( getObjectById', randomNumber )
 import Data
-import CG
 
--- | peons move to a room position
-peonMove ∷ Creep → RoomPosition → CG Env Unit
-peonMove creep dest = do
-  pathMem ← getCreepMem creep "path"
+-- | moves a peon type creep to a room position
+peonMove ∷ RoomPosition → Crp Unit
+peonMove dest = do
+  pathMem ← getCreepMemField "path"
   path0 ← case pathMem of
     Nothing → do
+      creep ← asks (_.creep)
       let path     = Room.findPath (RO.room creep) (RO.pos creep) dest
           destSpot = posToSpot dest
-      setCreepMem creep "path"   path
-      setCreepMem creep "dest"   destSpot
+      setCreepMemField' "path" path
+      setCreepMemField' "dest" destSpot
       pure path
     Just [] → do
+      -- clear and reset pathing when at paths' end
+      creep ← asks (_.creep)
+      dest ← findAndSetDestAndTarget RoleHarvester
       let path     = Room.findPath (RO.room creep) (RO.pos creep) dest
-          destSpot = posToSpot dest
-      setCreepMem creep "path"   path
-      setCreepMem creep "dest"   destSpot
+      setCreepMemField' "path" path
       pure path
     Just p0 → pure p0
-  peonMoveAlongPath creep path0
-peonMoveAlongPath ∷ Creep → Path → CG Env Unit
-peonMoveAlongPath creep []   = do
-  dest' ← getCreepMem creep "dest"
+  peonMoveAlongPath path0
+peonMoveAlongPath ∷ Path → Crp Unit
+peonMoveAlongPath []   = do
+  dest' ← getCreepMemField "dest"
   case dest' of
-    Nothing → log' LogWarn "creep has no dest"
-    Just d0 → if (RO.pos creep) `posEqSpot` d0 then
-                setCreepMem creep "moving" false
-              else
-                setCreepMem creep "path" path
-                where path = Room.findPath (RO.room creep) (RO.pos creep) d0'
-                      name = Room.name (RO.room creep)
-                      d0'  = spotToPos (Room.name (RO.room creep)) d0
-peonMoveAlongPath creep path = case uncons path of
-    Nothing               → log' LogError "this error is not possible"
-    Just {head:h,tail:[]} → do
-      setCreepMem creep "moving"     false
-      setCreepMem creep "path"       ([] ∷ Path)
-    Just {head:h,tail:t}  → do
-      ret ← moveCreep creep h.direction
-      let cn = Creep.name creep
-      if ret ≠ ok then do
-        dest ← getCreepMem creep "dest"
-        case dest of
-          Nothing → log' LogWarn "creep has path but no dest"
-          Just d0 → if (RO.pos creep) `posEqSpot` d0 then
-              setCreepMem creep "moving" false
-            else pure unit
-      else setCreepMem creep "path" t
+    Nothing → log''' LogWarn "creep has no dest"
+    Just d0 → do
+      creep ← asks (_.creep)
+      if (RO.pos creep) `posEqSpot` d0 then
+        setCreepMemField' "moving" false
+      else do
+        let path     = Room.findPath room creepPos d0'
+            name     = Room.name room
+            d0'      = spotToPos name d0
+            room     = RO.room creep
+            creepPos = RO.pos  creep
+        setCreepMemField' "path" path
+peonMoveAlongPath path = case uncons path of
+  Nothing → log''' LogError "this error is not possible"
+  Just {head:h,tail:[]} → do
+    setCreepMemField' "moving" false
+    setCreepMemField' "path"   ([] ∷ Path)
+  Just {head:h,tail:t}  → do
+    ret ← moveCreep' h.direction
+    creep ← asks (_.creep)
+    let cn = Creep.name creep
+    if ret ≠ ok then do
+      dest ← getCreepMemField "dest"
+      cPos ← creepPos
+      case dest of
+        Nothing → log''' LogWarn "creep has path but no dest"
+        Just d0 → if cPos `posEqSpot` d0 then
+                    setCreepMemField' "moving" false
+                  else pure unit
+    else setCreepMemField' "path" t
 
--- | all peons will need to harvest to get their energy
-peonHarvest ∷ Creep → CG Env Unit
-peonHarvest creep = do
-  target ← getCreepMem creep "target"
+-- | all peons will need to harvest their own energy
+peonHarvest ∷ Crp Unit
+peonHarvest = do
+  target ← getCreepMemField "target"
   case target of
-    Nothing → log' LogError "peon lost its harvest target"
+    Nothing → do
+      dest ← findAndSetDestAndTarget RoleHarvester
+      pure unit
+      --log''' LogError "peon lost its harvest target"
     Just t0 → do
-      source' ← getObjectById' t0
+      source' ← lift $ lift $ getObjectById' t0
       case source' of
-        Nothing → log' LogError "source destination no longer exists"
+        Nothing → log''' LogError "source destination no longer exists"
         Just s0 → do
-          harv ← creepHarvest creep s0
+          harv ← creepHarvest' s0
+          cFull ← creepFull
           if harv ≠ ok then do
---            log' LogWarn $ "peon was unable to harvest: " <> (show harv)
-            setCreepMem creep "moving"     true
-          else if creepFull creep then do
-            setCreepMem creep "harvesting" false
-            setCreepMem creep "moving"     true
-            dest ← findAndSetDestAndTarget RoleHarvester creep
-            peonMove creep dest
+            setCreepMemField' "moving"     true
+          else if cFull then do
+            setCreepMemField' "harvesting" false
+            setCreepMemField' "moving"     true
+            dest ← findAndSetDestAndTarget RoleHarvester
+            peonMove dest
           else pure unit
 
 -- | checks if we were already going somewhere and if not
---   finds a new source.
-getEnergy ∷ Creep → CG Env Unit
-getEnergy creep = do
-    dest ← getCreepMem creep "target"
-    case dest of
-      Nothing → do
-        home ← getCreepMem creep "home"
-        game ← asks (_.game)
-        let sources = Room.find (RO.room creep) find_sources
-            -- room memory is associated with each spawn right now
-            spawns  = Room.find (RO.room creep) find_my_spawns
-            -- assume one spawn per room, uses home if exists
-            spawn   = case home of
-                        Nothing → head spawns
-                        Just h0 → case (Game.getObjectById game h0) of
-                                     Nothing → head spawns
-                                     Just s0 → Just s0
-        harvSs ← case spawn of
-                   Nothing → pure []
-                   Just s1 → do
-                     ret ← getSpawnMem s1 "harvestSpots"
-                     case ret of
-                       Nothing → pure []
-                       Just h0 → pure h0
-        -- set to a random target
-        rand ← randomNumber 0
-        case (findOpenSource harvSs sources) of
-          Nothing  → pure unit
-          Just sid → do
-                       setCreepMem creep "target" (Source.id sid)
-                       case spawn of
-                         Nothing → pure unit
-                         Just s0 → setNHarvs harvSs (Source.id sid) s0
---        case (findNearestOpenSource harvSs sources (RO.pos creep)) of
---          Nothing → pure unit
---          Just nearestSource → do
---                  setCreepMem creep "target" (Source.id nearestSource)
---                  case spawn of
---                    Nothing → pure unit
---                    Just s0 → setNHarvs harvSs (Source.id nearestSource) s0
-      Just d0 → do
-        game ← asks (_.game)
-        let nearestSource' = Game.getObjectById game d0
-        case nearestSource' of
-          Nothing → log' LogWarn $ "creep " <> (Creep.name creep)
+--   finds a new source and resets dest
+getEnergy ∷ Crp Unit
+getEnergy = do
+  dest ← getCreepMemField "target"
+  case dest of
+    Nothing → do
+      home ← getCreepMemField "home"
+      game ← lift $ lift $ asks (_.game)
+      case home of
+        Nothing → pure unit
+        Just h0 → case (Game.getObjectById game h0) of
+          Nothing → pure unit
+          Just s0 → do
+            let sources = Room.find room find_sources
+                spawns  = Room.find room find_my_spawns
+                room    = RO.room s0
+            ret ← lift $ getSpawnMem' "harvestSpots"
+            let harvSs = case ret of
+                         Nothing → []
+                         Just h0 → h0
+            -- set to a pseudo-random target
+            rand ← lift $ lift $ randomNumber 0
+            case (findOpenSource harvSs sources) of
+              Nothing  → pure unit
+              Just sid → do
+                setCreepMemField' "target" (Source.id sid)
+                lift $ lift $ setNHarvs harvSs (Source.id sid) s0
+    Just d0 → do
+      game ← lift $ lift $ asks (_.game)
+      creep ← asks (_.creep)
+      let nearestSource' = Game.getObjectById game d0
+      case nearestSource' of
+        Nothing → log''' LogWarn $ "creep " <> (Creep.name creep)
                                             <> " has lost its destination: "
                                             <> (show d0)
-          Just nearestSource → do
-            harv ← creepHarvest creep nearestSource
-            if harv ≡ err_not_in_range then do
-              ret ← moveCreepTo creep (TargetObj nearestSource)
-              pure unit
-            else pure unit
-storeEnergy ∷ Creep → CG Env Unit
-storeEnergy creep = do
-    let targets = Room.find' (RO.room creep) find_structures hasFreeSpace
-    case (findNearest targets (RO.pos creep)) of
-      Nothing → pure unit
-      Just nearestTarget → if (length targets) > 0 then do
-          targ ← transferResourceTo creep nearestTarget resource_energy
-          if targ == err_not_in_range then do
-            ret ← moveCreepTo creep (TargetObj nearestTarget)
+        Just nearestSource → do
+          harv ← creepHarvest' nearestSource
+          if harv ≡ err_not_in_range then do
+            ret ← moveCreepTo' (TargetObj nearestSource)
             pure unit
           else pure unit
-        else pure unit
+storeEnergy ∷ Crp Unit
+storeEnergy = do
+  creep ← asks (_.creep)
+  let targets = Room.find' (RO.room creep) find_structures hasFreeSpace
+  case (findNearest targets (RO.pos creep)) of
+    Nothing → pure unit
+    Just nearestTarget → if (length targets) > 0 then do
+           targ ← transferResourceTo' nearestTarget resource_energy
+           if targ ≡ err_not_in_range then do
+             ret ← moveCreepTo' (TargetObj nearestTarget)
+             pure unit
+           else pure unit
+         else pure unit
 
 -- | trys to dropoff energy
-peonDeposit ∷ Creep → CG Env Unit
-peonDeposit creep = do
-  target' ← getCreepMem creep "target"
+peonDeposit ∷ Crp Unit
+peonDeposit = do
+  target' ← getCreepMemField "target"
   case target' of
-    Nothing → log' LogWarn "creep has lost deposit target"
+    Nothing  → log''' LogWarn "creep has lost deposit target"
     Just tid → do
-      obj ← getObjectById' tid
+      obj ← lift $ lift $ getObjectById' tid
       case obj of
-        Nothing   → log' LogWarn "creep has lost its deposit target id"
+        Nothing   → log''' LogWarn "creep has lost its deposit target id"
         Just tObj → do
-          targ   ← transferResourceTo creep tObj resource_energy
+          targ  ← transferResourceTo' tObj resource_energy
           if targ ≠ ok then do
-            log' LogError $ "target error: " <> (show targ)
-            setCreepMem creep "moving" true
+            --log''' LogError $ "target error: " <> (show targ)
+            setCreepMemField' "moving"     true
+            dest ← findAndSetDestAndTarget RoleHarvester
+            peonMove dest
           else do
-            setCreepMem creep "harvesting" true
-            dest ← findAndSetDestAndTarget RoleHarvester creep
-            peonMove creep dest
+            setCreepMemField' "harvesting" true
+            dest ← findAndSetDestAndTarget RoleHarvester
+            peonMove dest

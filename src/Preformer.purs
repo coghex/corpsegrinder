@@ -1,75 +1,36 @@
 module Preformer where
 
 import UPrelude
-import Control.Monad.Reader (asks, ask)
-import Data.Array (uncons)
-import Data.Tuple (Tuple(..))
-import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (getField)
-import Screeps.Data
+import Data.Tuple ( Tuple(..), snd )
+import Data.Array ( uncons, head, tail )
 import Foreign.Object as F
-import Screeps.Game as Game
-import Screeps.RoomObject as RO
-import Screeps.Creep as Creep
-import Screeps.Structure.Spawn as Spawn
-import Screeps.Store as Store
-import Screeps.Const (resource_energy, pWork, pMove, pCarry)
-import Role.Harvester (preformHarvester)
-import Role.Collier (preformCollier)
-import Role.Upgrader (preformUpgrader)
-import Role.Builder (preformBuilder)
-import Role.Worker (preformWorker)
-import Util (posToSpot)
+import Screeps.Data
+import Role.Harvester ( preformHarvester )
+import Role.Upgrader ( preformUpgrader )
+import Role.Builder ( preformBuilder )
 import Data
-import CG
+import Spawn
 import Creep
 
--- | creeps change their roles here
-preformCreeps ∷ CG Env Unit
+preformCreeps ∷ Spwn Unit
 preformCreeps = do
-  creeps' ← getMemField "creeps"
-  let creeps = F.toUnfoldable $ case creeps' of
-                 Nothing → F.empty
-                 Just c0 → c0
+  creeps' ← getCreeps'
+  let creeps = F.toUnfoldable creeps'
   preformCreepsF creeps
-preformCreepsF ∷ Array (Tuple String (F.Object Json)) → CG Env Unit
+preformCreepsF ∷ Array (Tuple String Creep) → Spwn Unit
 preformCreepsF []     = pure unit
-preformCreepsF creeps = do
-  preformCreep creep'
-  preformCreepsF creeps'
-    where creep'  = case uncons creeps of
-                      Just {head: c, tail: _}  → c
-                      Nothing                  → Tuple "NULL" F.empty
-          creeps' = case uncons creeps of
-                      Just {head: _, tail: cs} → cs
-                      Nothing                  → []
-
-preformCreep ∷ Tuple String (F.Object Json) → CG Env Unit
-preformCreep (Tuple "NULL" val) = pure unit
-preformCreep (Tuple key    val) = preformRole key role
-  where role = case getField val "role" of
-                 Left err → RoleNULL
-                 Right r0 → r0
-preformRole ∷ String → Role → CG Env Unit
-preformRole key role = do
-  game ← asks (_.game)
-  let creep = F.lookup key (Game.creeps game)
-  case creep of
-    Nothing → pure unit
-    Just c0 → do
-      mem ← getAllCreepMem c0
-      case mem of
-        Nothing → pure unit
-        Just m0 → preformRoleF c0 role m0
-preformRoleF ∷ Creep → Role → F.Object Json → CG Env Unit
-preformRoleF creep RoleIdle         mem = pure unit
-preformRoleF creep RoleHarvester    mem =
-  runCreepEnv (preformHarvester creep) { creep:creep, mem:mem, room:room }
-  where room = RO.room creep
-preformRoleF creep (RoleWorker j)   mem = preformWorker    creep j
-preformRoleF creep (RoleBuilder _)  mem = preformBuilder   creep
-preformRoleF creep RoleUpgrader     mem =
-  runCreepEnv (preformUpgrader creep)  { creep:creep, mem:mem, room:room }
-  where room = RO.room creep
-preformRoleF creep RoleCollier      mem = preformCollier   creep
-preformRoleF creep RoleNULL         mem = pure unit
+preformCreepsF creeps = case uncons creeps of
+  Nothing              → pure unit
+  Just {head:h,tail:t} → do
+    m ← getCreepMem' $ snd h
+    case m of
+      Nothing → log'' LogError "creep lost its memory"
+      Just m0 → runCE preformCreep { creep:snd h, mem:m0 }
+preformCreep ∷ Crp Unit
+preformCreep = do
+  role ← getCreepMemField "role"
+  case role of
+    Just RoleHarvester  → preformHarvester
+    Just RoleUpgrader   → preformUpgrader
+    Just RoleBuilder    → preformBuilder
+    _                   → pure unit

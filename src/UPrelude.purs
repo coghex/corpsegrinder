@@ -1,16 +1,15 @@
 module UPrelude
+-- ^ i define some extra universal stuff, like more unicode
   ( module P
   , module Data.Maybe
   , module Data.Either
   , (≡), (≠), (≤), (≥), (∧), (∨)
   ) where
--- ^ i define some extra universal stuff, like more unicode
 import Prelude as P
 import Data.Eq(eq,notEq)
 import Data.Ord(lessThanOrEq,greaterThanOrEq)
 import Data.BooleanAlgebra(conj,disj)
--- these modules are so universal in the code
--- that i write i just import them everywhere
+-- maybe and either should be part of the language standard
 import Data.Maybe(Maybe(..))
 import Data.Either(Either(..))
 

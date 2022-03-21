@@ -5,31 +5,32 @@ import Control.Monad.Reader (asks)
 import Data.Array (uncons, length, filter, head)
 import Data.Newtype (class Newtype)
 import Data.Argonaut.Core (Json)
-import Data.Argonaut.Decode (class DecodeJson)
-import Data.Argonaut.Encode (class EncodeJson)
+import Data.Argonaut.Decode ( class DecodeJson, getField
+                            , JsonDecodeError(..))
+import Data.Argonaut.Encode ( class EncodeJson)
+import Control.Comonad.Env.Class ( class ComonadAsk )
 import Control.Monad.Reader.Class (class MonadAsk, class MonadReader)
 import Control.Monad.Trans.Class (class MonadTrans, lift)
-import Screeps.Data
-import Screeps.Const (find_sources)
-import Screeps.Game as Game
-import Screeps.Room as Room
-import Screeps.RoomObject as RO
+import Foreign.Object       as F
+import Screeps.Room         as Room
+import Screeps.RoomObject   as RO
 import Screeps.RoomPosition as RP
-import Screeps.RoomTerrain as RT
-import Screeps.Structure (structureType)
-import Screeps.Const (find_my_structures, resource_energy)
-import Screeps.Source as Source
-import Screeps.Store as Store
-import Foreign.Object as F
-import Util (isStorable)
+import Screeps.RoomTerrain  as RT
+import Screeps.Source       as Source
+import Screeps.Store        as Store
+import Screeps.Structure ( structureType )
+import Screeps.Data
+import Screeps.Const ( find_sources, find_my_structures
+                     , resource_energy )
 import Data
-import CG
+import CorpseGrinder
 
+-- simple trans reader monad
 type SpawnEnv = { spawn ∷ Spawn
                 , mem   ∷ F.Object Json }
 newtype SE ε m α = SE (SpawnEnv → m α)
-runSpawnEnv ∷ ∀ m α. SE SpawnEnv m α → SpawnEnv → m α
-runSpawnEnv (SE se) = se
+runSE ∷ ∀ m α. SE SpawnEnv m α → SpawnEnv → m α
+runSE (SE se) = se
 derive instance newtypeSE ∷ Newtype (SE ε m α) _
 instance functorSE ∷ Functor m ⇒ Functor (SE ε m) where
   map = mapSpawnEnv <<< map
@@ -50,30 +51,68 @@ instance monadAskSE ∷ (Monad m) ⇒ MonadAsk SpawnEnv (SE ε m) where
 instance monadTransSE ∷ MonadTrans (SE ε) where
   lift = SE <<< const
 
--- special case where we are wrapping spawn into CG
-type Spwn α = SE SpawnEnv (CG Env) α
+-- | special case where we are wrapping spawn into CorpseGrinder
+type Spwn α = SE SpawnEnv (CorpseGrinder Env) α
 
-log'' ∷ LogLevel → String → SE SpawnEnv (CG Env) Unit
+-- | some functions lifted from CorpseGrinder
+log'' ∷ LogLevel → String → SE SpawnEnv (CorpseGrinder Env) Unit
 log'' lvl str = lift $ log' lvl str
-
--- | some functions lifted from CG
-getMemField' ∷ ∀ α. (DecodeJson α) ⇒ String → SE SpawnEnv (CG Env) (Maybe α)
+getTime' ∷ SE SpawnEnv (CorpseGrinder Env) Int
+getTime' = lift getTime
+getMemField' ∷ ∀ α. (DecodeJson α)
+  ⇒ String → SE SpawnEnv (CorpseGrinder Env) (Maybe α)
 getMemField' field = lift $ getMemField field
-setMemField' ∷ ∀ α. (EncodeJson α) ⇒ String → α → SE SpawnEnv (CG Env) Unit
+setMemField' ∷ ∀ α. (EncodeJson α)
+  ⇒ String → α → SE SpawnEnv (CorpseGrinder Env) Unit
 setMemField' field val = lift $ setMemField field val
-freeCreepMem' ∷ String → SE SpawnEnv (CG Env) Unit
+freeCreepMem' ∷ String → SE SpawnEnv (CorpseGrinder Env) Unit
 freeCreepMem' n = lift $ freeCreepMem n
+getCreepMem' ∷ ∀ α. (DecodeJson α)
+  ⇒ Creep → SE SpawnEnv (CorpseGrinder Env) (Maybe α)
+getCreepMem' creep = lift $ getCreepMem creep
+createConstructionSite' ∷ ∀ α. TargetPosition α → StructureType → Spwn Boolean
+createConstructionSite' pos stype = do
+  spawn ← asks (_.spawn)
+  let room = RO.room spawn
+  lift $ createConstructionSite room pos stype
+spawnCreep' ∷ ∀ α. (EncodeJson α) ⇒ Array BodyPartType
+  → Maybe String → α → Spwn (Maybe String)
+spawnCreep' parts name' mem = do
+  spawn ← asks (_.spawn)
+  lift $ spawnCreep spawn parts name' mem
+-- | note that this returns all creeps, not just the spawns
+getCreeps' ∷ Spwn (F.Object Creep)
+getCreeps' = lift getCreeps
 
-initSpawn ∷ SE SpawnEnv (CG Env) Unit
+-- | inits all spawns
+initSpawns ∷ Array Spawn → CorpseGrinder Env Unit
+initSpawns []  = pure unit
+initSpawns arr = case uncons arr of
+  Nothing              → pure unit
+  Just {head:h,tail:t} → do
+    let r            = RO.room h
+        harvestSpots = findAllHarvestSpots r sources
+        sources      = Room.find r find_sources
+    setSpawnMem h "harvestSpots" harvestSpots
+
+initSpawn ∷ SE SpawnEnv (CorpseGrinder Env) Unit
 initSpawn = do
   spawn1 ← asks (_.spawn)
   let r            = RO.room spawn1
       harvestSpots = findAllHarvestSpots r sources
       sources      = Room.find r find_sources
-  setSpawnMem' spawn1 "harvestSpots" harvestSpots
+  setSpawnMem' "harvestSpots" harvestSpots
 
-setSpawnMem' ∷ ∀ α. (EncodeJson α) ⇒ Spawn → String → α → SE SpawnEnv (CG Env) Unit
-setSpawnMem' spawn field val = lift $ setSpawnMem spawn field val
+setSpawnMem' ∷ ∀ α. (EncodeJson α)
+  ⇒ String → α → SE SpawnEnv (CorpseGrinder Env) Unit
+setSpawnMem' field val = do
+  spawn ← asks (_.spawn)
+  lift $ setSpawnMem spawn field val
+getSpawnMem' ∷ ∀ α. (DecodeJson α)
+  ⇒ String → SE SpawnEnv (CorpseGrinder Env) (Maybe α)
+getSpawnMem' field = do
+  spawn ← asks (_.spawn)
+  lift $ getSpawnMem spawn field
 
 findAllHarvestSpots ∷ Room → Array Source → Array HarvestSpot
 findAllHarvestSpots _    []      = []
@@ -132,6 +171,14 @@ walkable (Spot {spotType: SpotPlain, spotX: _, spotY: _}) = true
 walkable (Spot {spotType: SpotWall , spotX: _, spotY: _}) = false
 walkable (Spot {spotType: SpotSwamp, spotX: _, spotY: _}) = true
 walkable (Spot {spotType: SpotLava , spotX: _, spotY: _}) = false
+
+-- | returns the repair jobs kept in memory
+getAvailRepairJobs ∷ Spwn (Array Job)
+getAvailRepairJobs = do
+  jobs ← lift $ getMemField "repairJobsAvail"
+  pure $ case jobs of
+    Nothing → []
+    Just j0 → j0
 
 -- | adds up the total capacity of all energy stores
 energyCapacity ∷ F.Object Spawn → Int
@@ -209,4 +256,10 @@ addUpUsedSpace arr = str0 + addUpUsedSpace arr'
                                                       resource_energy
                  Nothing              → 0
 
+-- | true if structure has a store
+isStorable ∷ ∀ α. Structure α → StructureType → Boolean
+isStorable structure structure_spawn     = true
+isStorable structure structure_tower     = true
+isStorable structure structure_extension = true
+isStorable _         _                   = false
 

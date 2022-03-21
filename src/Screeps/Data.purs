@@ -25,7 +25,6 @@ newtype FindType α = FindType Int
 foreign import data Date ∷ Type
 newtype Event = Event Int
 
-
 -- memory
 foreign import data MemoryGlobal ∷ Type
 foreign import data RawMemoryGlobal ∷ Type

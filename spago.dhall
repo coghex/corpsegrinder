@@ -17,7 +17,6 @@ to generate this file without the comments in this block.
   , "argonaut-generic"
   , "arrays"
   , "console"
-  , "control"
   , "datetime"
   , "effect"
   , "either"

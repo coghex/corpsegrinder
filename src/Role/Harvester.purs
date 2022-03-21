@@ -1,45 +1,54 @@
 module Role.Harvester where
 import UPrelude
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Reader.Class (asks)
+import Data ( Role(..) )
+import Control.Monad.Trans.Class ( lift )
+import Screeps.Room       as Room
 import Screeps.RoomObject as RO
-import Screeps.Room as Room
-import Screeps.Data
-import Creep.Peon (peonHarvest, peonMove, peonDeposit)
-import Util (spotToPos)
-import Data (Role(..))
-import Creep.Util (findAndSetDestAndTarget, creepFull)
+import Creep.Peon ( peonMove, peonHarvest, peonDeposit )
+import Creep.Util ( findAndSetDestAndTarget, creepEmpty, creepFull )
+import Util ( spotToPos )
 import Creep
-import CG
+import CorpseGrinder ( getObjectById' )
 
--- | a harvester moves between energy source and extension, spawn, or tower
---   the simplest role
-preformHarvester ∷ Creep → CE CreepEnv (CG Env) Unit
---preformHarvester creep = if creepFull creep then storeEnergy creep else getEnergy creep
-preformHarvester creep = do
-  moving ← getCreepMemMoving
-  lift $ do
-    if moving then do
-      dest' ← getCreepMem creep "dest"
-      case dest' of
-        Nothing → do
-          dest ← findAndSetDestAndTarget RoleHarvester creep
-          peonMove creep dest
-        Just dest → peonMove creep $ spotToPos room dest
-          where room = Room.name (RO.room creep)
-    else do
-      harvesting' ← getCreepMem creep "harvesting"
-      harvesting  ← case harvesting' of
-                      Nothing → do
-                        let bool = not $ creepFull creep
-                        setCreepMem creep "harvesting" bool
-                        pure bool
-                      Just h0 → pure h0
-      if harvesting then
-        if creepFull creep then do
-          setCreepMem creep "harvesting" false
-          setCreepMem creep "moving" true
-          dest ← findAndSetDestAndTarget RoleHarvester creep
-          peonMove creep dest
-        else peonHarvest creep
-      else peonDeposit creep
+-- | a harvester is only for low RCL, and mines energy after mining
+--   to where its needed.  once we have containers we no longer use
+preformHarvester ∷ Crp Unit
+preformHarvester = do
+  moving' ← getCreepMemField "moving"
+  let moving = case moving' of
+                 Nothing → false
+                 Just b0 → b0
+  if moving then do
+    dest' ← getCreepMemField "dest"
+    case dest' of
+      Nothing → do
+        dest ← findAndSetDestAndTarget RoleHarvester
+        peonMove dest
+      Just dest → do
+        home' ← getCreepMemField "home"
+        case home' of
+          Nothing     → pure unit
+          Just homeid → do
+            home'' ← lift $ lift $ getObjectById' homeid
+            case home'' of
+              Nothing → pure unit
+              Just home → peonMove $ spotToPos room dest
+                where room = Room.name (RO.room home)
+  else do
+    cFull ← creepFull
+    harvesting' ← getCreepMemField "harvesting"
+    harvesting  ← case harvesting' of
+                    Nothing → do
+                      let bool = not $ cFull
+                      setCreepMemField' "harvesting" bool
+                      pure bool
+                    Just h0 → pure h0
+    if harvesting then
+      if cFull then do
+        setCreepMemField' "harvesting" false
+        setCreepMemField' "moving" true
+        dest ← findAndSetDestAndTarget RoleHarvester
+        peonMove dest
+      else peonHarvest
+    else peonDeposit
+

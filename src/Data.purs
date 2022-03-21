@@ -1,66 +1,67 @@
 module Data where
 
 import UPrelude
-import Data.Argonaut.Core (jsonEmptyObject)
-import Data.Argonaut.Decode (class DecodeJson, decodeJson
-                            , JsonDecodeError(..), (.:))
-import Data.Argonaut.Encode (class EncodeJson, encodeJson, (:=), (~>))
-import Data.Int ( fromString )
 import Data.String ( length, take, drop )
 import Data.Either ( note )
+import Data.Argonaut.Core ( jsonEmptyObject )
+import Data.Argonaut.Encode ( class EncodeJson, encodeJson
+                            , (:=), (~>))
+import Data.Argonaut.Decode ( class DecodeJson, decodeJson
+                            , JsonDecodeError(..), (.:) )
 import Screeps.Data
 
-data    LoopStatus = LoopGo
-                   | LoopStart
-                   | LoopReset
-                   | LoopError String
-                   | LoopNULL
-
+-- | defines the status of the main loop
+data LoopStatus = LoopGo
+                | LoopStart
+                | LoopReset
+                | LoopError String
+                | LoopNULL
+instance showLoopStatus ∷ Show LoopStatus where
+  show LoopGo          = "LoopGo"
+  show LoopStart       = "LoopStart"
+  show LoopReset       = "LoopReset"
+  show (LoopError err) = "LoopError:" <> err
+  show LoopNULL        = "LoopNULL"
 instance encodeLoopStatus ∷ EncodeJson LoopStatus where
-  encodeJson LoopGo          = encodeJson   "loopGo"
-  encodeJson LoopStart       = encodeJson   "loopStart"
-  encodeJson LoopReset       = encodeJson   "loopReset"
-  encodeJson (LoopError err) = encodeJson $ "loopError:" <> err
-  encodeJson LoopNULL        = encodeJson   "loopNULL"
+  encodeJson ls = encodeJson $ show ls
 instance decodeLoopStatus ∷ DecodeJson LoopStatus where
   decodeJson json = do
     string ← decodeJson json
-    note (TypeMismatch "LoopStatus:") (lsFromStr string)
+    note (TypeMismatch "LoopStatus") (lsFromStr string)
 lsFromStr ∷ String → Maybe LoopStatus
-lsFromStr "loopGo"    = Just LoopGo
-lsFromStr "loopStart" = Just LoopStart
-lsFromStr "loopReset" = Just LoopReset
-lsFromStr "loopNULL"  = Just LoopNULL
+lsFromStr "LoopGo"    = Just LoopGo
+lsFromStr "LoopStart" = Just LoopStart
+lsFromStr "LoopReset" = Just LoopReset
+lsFromStr "LoopNULL"  = Just LoopNULL
 lsFromStr str         = if (length str) > 9 then
-    if (take 9 str) ≡ "loopError" then
+    if (take 9 str) ≡ "LoopError" then
       Just $ LoopError (drop 9 str)
     else Nothing
   else Nothing
-instance showLoopStatus ∷ Show LoopStatus where
-  show LoopGo          = "loopGo"
-  show LoopStart       = "loopStart"
-  show LoopReset       = "loopReset"
-  show (LoopError err) = "loopError:" <> err
-  show LoopNULL        = "loopNULL"
 
-data CreepType = CreepPeon | CreepCollier | CreepHauler | CreepGrunt | CreepNULL
-instance encodeCreepType ∷ EncodeJson CreepType where
-  encodeJson CreepPeon    = encodeJson "creepPeon"
-  encodeJson CreepCollier = encodeJson "creepCollier"
-  encodeJson CreepHauler  = encodeJson "creepHauler"
-  encodeJson CreepGrunt   = encodeJson "creepGrunt"
-  encodeJson CreepNULL    = encodeJson "creepNULL"
-instance decodeCreepType ∷ DecodeJson CreepType where
-  decodeJson json = do
-    string ← decodeJson json
-    note (TypeMismatch "DecodeJson") (ctFromStr string)
-ctFromStr ∷ String → Maybe CreepType
-ctFromStr "creepPeon"    = Just CreepPeon
-ctFromStr "creepCollier" = Just CreepCollier
-ctFromStr "creepHauler"  = Just CreepHauler
-ctFromStr "creepGrunt"   = Just CreepGrunt
-ctFromStr "creepNULL"    = Just CreepNULL
-ctFromStr _              = Nothing
+-- | possible log levels
+data LogLevel = LogDebug | LogInfo | LogWarn | LogError | LogNULL
+derive instance eqLogLevel  ∷ Eq  LogLevel
+derive instance ordLogLevel ∷ Ord LogLevel
+instance showLogLevel ∷ Show LogLevel where
+  show LogDebug = "Debug"
+  show LogInfo  = "Info"
+  show LogWarn  = "Warn"
+  show LogError = "Error"
+  show LogNULL  = "NULL"
+
+-- | creeps have a static type that dictates structure and possible roles
+data CreepType = CreepPeon
+               | CreepCollier
+               | CreepHauler
+               | CreepGrunt
+               | CreepNULL
+instance showCreepType ∷ Show CreepType where
+  show CreepPeon    = "CreepPeon"
+  show CreepCollier = "CreepCollier"
+  show CreepHauler  = "CreepHauler"
+  show CreepGrunt   = "CreepGrunt"
+  show CreepNULL    = "CreepNULL"
 instance eqCreepType ∷ Eq CreepType where
   eq CreepPeon    CreepPeon    = true
   eq CreepCollier CreepCollier = true
@@ -68,14 +69,70 @@ instance eqCreepType ∷ Eq CreepType where
   eq CreepGrunt   CreepGrunt   = true
   eq CreepNULL    CreepNULL    = true
   eq _            _            = false
+instance encodeCreepType ∷ EncodeJson CreepType where
+  encodeJson creeptype = encodeJson $ show creeptype
+instance decodeCreepType ∷ DecodeJson CreepType where
+  decodeJson json = do
+    string ← decodeJson json
+    note (TypeMismatch "DecodeJson") (ctFromStr string)
+ctFromStr ∷ String → Maybe CreepType
+ctFromStr "CreepPeon"    = Just CreepPeon
+ctFromStr "CreepCollier" = Just CreepCollier
+ctFromStr "CreepHauler"  = Just CreepHauler
+ctFromStr "CreepGrunt"   = Just CreepGrunt
+ctFromStr "CreepNULL"    = Just CreepNULL
+ctFromStr _              = Nothing
 
-data CreepCounts = CreepCounts
-  { nPeon    ∷ Int
-  , nCollier ∷ Int
-  , nHauler  ∷ Int
-  , nGrunt   ∷ Int }
+-- | roles are sets of behaviors that creeps can choose to play
+data Role = RoleIdle
+          | RoleBuilder
+          | RoleHarvester
+          | RoleUpgrader
+          | RoleWorker Job
+          | RoleCollier
+          | RoleNULL
+roleList = [RoleIdle, RoleHarvester, RoleBuilder, (RoleWorker JobNULL)
+           , RoleCollier, RoleUpgrader, RoleNULL] ∷ Array Role
+instance showRole ∷ Show Role where
+  show RoleHarvester  = "RoleHarvester"
+  show RoleUpgrader   = "RoleUpgrader"
+  show RoleBuilder    = "RoleBuilder"
+  show (RoleWorker j) = "RoleWorker:" <> (show j)
+  show RoleCollier    = "RoleCollier"
+  show RoleIdle       = "RoleIdle"
+  show RoleNULL       = "RoleNULL"
+instance eqRoles ∷ Eq Role where
+  eq RoleHarvester  RoleHarvester  = true
+  eq RoleUpgrader   RoleUpgrader   = true
+  eq RoleBuilder    RoleBuilder    = true
+  eq RoleCollier    RoleCollier    = true
+  eq (RoleWorker j) (RoleWorker k) = j ≡ k
+  eq RoleIdle       RoleIdle       = true
+  eq RoleNULL       RoleNULL       = true
+  eq _              _              = false
+instance encodeRole ∷ EncodeJson Role where
+  encodeJson role = encodeJson $ show role
+instance decodeRole ∷ DecodeJson Role where
+  decodeJson json = do
+    string ← decodeJson json
+    note (TypeMismatch "Role") (roleFromStr string)
+roleFromStr ∷ String → Maybe Role
+roleFromStr "RoleHarvester" = Just RoleHarvester
+roleFromStr "RoleUpgrader"  = Just RoleUpgrader
+roleFromStr "RoleIdle"      = Just RoleIdle
+roleFromStr "RoleCollier"   = Just RoleCollier
+roleFromStr "RoleNULL"      = Just RoleNULL
+roleFromStr str             = if (length str) > 11 then
+    if (take 10 str) ≡ "RoleWorker" then
+      case take 9 (drop 11 str) of
+        "JobRepair" → Just $ RoleWorker $ JobRepair $ drop 21 str
+        _           → Just $ RoleWorker JobNULL
+    else Nothing
+  else Nothing
 
-data Job       = JobNULL | JobRepair String
+-- | jobs provide a one time behavior for a worker role to play
+data Job = JobNULL
+         | JobRepair String
 instance showJob ∷ Show Job where
   show JobNULL       = "JobNULL"
   show (JobRepair n) = "JobRepair:" <> (show n)
@@ -97,82 +154,7 @@ jobFromStr str       = if (length str) > 9 then
     else Nothing
   else Nothing
 
-data Role      = RoleIdle
-               | RoleBuilder Int
-               | RoleHarvester
-               | RoleUpgrader
-               | RoleWorker Job
-               | RoleCollier
-               | RoleNULL
-instance showRole ∷ Show Role where
-  show RoleHarvester   = "RoleHarvester"
-  show RoleUpgrader    = "RoleUpgrader"
-  show (RoleBuilder n) = "RoleBuilder " <> (show n)
-  show (RoleWorker _)  = "RoleWorker"
-  show RoleCollier     = "RoleCollier"
-  show RoleIdle        = "RoleIdle"
-  show RoleNULL        = "RoleNULL"
-instance eqRoles ∷ Eq Role where
-  eq RoleNULL        RoleNULL        = true
-  eq RoleIdle        RoleIdle        = true
-  eq RoleHarvester   RoleHarvester   = true
-  eq RoleUpgrader    RoleUpgrader    = true
-  eq (RoleWorker _)  (RoleWorker _)  = true
-  eq (RoleBuilder _) (RoleBuilder _) = true
-  eq RoleCollier     RoleCollier     = true
-  eq _               _               = false
-instance encodeRole ∷ EncodeJson Role where
-  encodeJson RoleIdle        = encodeJson "RoleIdle"
-  encodeJson RoleHarvester   = encodeJson "RoleHarvester"
-  encodeJson RoleUpgrader    = encodeJson "RoleUpgrader"
-  encodeJson (RoleBuilder n) = encodeJson $ "RoleBuilder:" <> (show n)
-  encodeJson (RoleWorker n)  = encodeJson $ "RoleWorker:" <> (show n)
-  encodeJson RoleCollier     = encodeJson "RoleCollier"
-  encodeJson RoleNULL        = encodeJson "RoleNULL"
-instance decodeRole ∷ DecodeJson Role where
-  decodeJson json = do
-    string ← decodeJson json
-    note (TypeMismatch "Role") (roleFromStr string)
-roleFromStr ∷ String → Maybe Role
-roleFromStr "RoleHarvester" = Just RoleHarvester
-roleFromStr "RoleUpgrader"  = Just RoleUpgrader
-roleFromStr "RoleIdle"      = Just RoleIdle
-roleFromStr "RoleCollier"   = Just RoleCollier
-roleFromStr "RoleNULL"      = Just RoleNULL
-roleFromStr str             = if (length str) > 11 then
-    if (take 11 str) ≡ "RoleBuilder" then
-      case (fromString (drop 12 str)) of
-        Nothing → Nothing
-        Just s0 → Just $ RoleBuilder s0
-    else if (take 10 str) ≡ "RoleWorker" then
-      case (take 9 (drop 11 str)) of
-        "JobRepair" → Just $ RoleWorker $ JobRepair $ drop 21 str
-        _           → Just $ RoleWorker JobNULL
-    else Nothing
-  else Nothing
-
-roleList = [RoleIdle, RoleHarvester, (RoleBuilder 0), (RoleWorker JobNULL)
-           , RoleCollier, RoleUpgrader, RoleNULL] ∷ Array Role
-
-data HarvestSpot = HarvestSpot { sourceName ∷ Id Source
-                               , nHarvs     ∷ Int
-                               , nMaxHarvs  ∷ Int
-                               , harvSpots  ∷ Array Spot }
-instance encodeHarvestSpot ∷ EncodeJson HarvestSpot where
-  encodeJson (HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots }) =
-    "sourceName"     := sourceName
-      ~> "nHarvs"    := nHarvs
-      ~> "nMaxHarvs" := nMaxHarvs
-      ~> "harvSpots" := harvSpots
-      ~> jsonEmptyObject
-instance decodeHarvestSpot ∷ DecodeJson HarvestSpot where
-  decodeJson json = do
-    obj ← decodeJson json
-    sourceName ← obj .: "sourceName"
-    nHarvs     ← obj .: "nHarvs"
-    nMaxHarvs  ← obj .: "nMaxHarvs"
-    harvSpots  ← obj .: "harvSpots"
-    pure $ HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots }
+-- | Spots are the most abstract form of tile on the map
 data Spot = Spot { spotType ∷ SpotType
                  , spotX    ∷ Int
                  , spotY    ∷ Int }
@@ -192,7 +174,7 @@ instance decodeJson ∷ DecodeJson Spot where
 instance spotEq ∷ Eq Spot where
   eq (Spot {spotType:_,spotX:x0,spotY:y0})
      (Spot {spotType:_,spotX:x1,spotY:y1}) = (x0 ≡ x1) ∧ (y0 ≡ y1)
-
+-- | spots are always one of four types
 data SpotType = SpotPlain | SpotWall | SpotSwamp | SpotLava
 instance encodeSpotType ∷ EncodeJson SpotType where
   encodeJson SpotPlain = encodeJson "spotPlain"
@@ -210,6 +192,28 @@ spotTypeFromStr "spotSwamp" = Just SpotSwamp
 spotTypeFromStr "spotLava"  = Just SpotLava
 spotTypeFromStr _           = Nothing
 
+-- | HarvestSpot holds harvest data for a source
+data HarvestSpot = HarvestSpot { sourceName ∷ Id Source
+                               , nHarvs     ∷ Int
+                               , nMaxHarvs  ∷ Int
+                               , harvSpots  ∷ Array Spot }
+instance encodeHarvestSpot ∷ EncodeJson HarvestSpot where
+  encodeJson (HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots }) =
+    "sourceName"     := sourceName
+      ~> "nHarvs"    := nHarvs
+      ~> "nMaxHarvs" := nMaxHarvs
+      ~> "harvSpots" := harvSpots
+      ~> jsonEmptyObject
+instance decodeHarvestSpot ∷ DecodeJson HarvestSpot where
+  decodeJson json = do
+    obj ← decodeJson json
+    sourceName ← obj .: "sourceName"
+    nHarvs     ← obj .: "nHarvs"
+    nMaxHarvs  ← obj .: "nMaxHarvs"
+    harvSpots  ← obj .: "harvSpots"
+    pure $ HarvestSpot { sourceName, nHarvs, nMaxHarvs, harvSpots }
+
+-- | values held in memory for each container
 data ContainerMemory = ContainerMemory
   { id   ∷ Id Container 
   , used ∷ Boolean }
@@ -228,3 +232,11 @@ instance decodeContainerMemory ∷ DecodeJson ContainerMemory where
     id   ← obj .: "id"
     used ← obj .: "used"
     pure $ ContainerMemory { id, used }
+
+-- | return structure for certain functions
+data CreepCounts = CreepCounts
+  { nPeon    ∷ Int
+  , nCollier ∷ Int
+  , nHauler  ∷ Int
+  , nGrunt   ∷ Int }
+

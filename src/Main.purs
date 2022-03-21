@@ -2,99 +2,80 @@ module Main where
 
 import UPrelude
 import Effect (Effect)
-import Data.Array (length)
-import Control.Monad.Reader (asks)
-import Control.Monad.Trans.Class (lift)
-import Screeps.Room   as Room
-import Screeps.RoomObject as RO
-import Screeps.Memory as Memory
-import Screeps.Game   as Game
+import Data.Array (uncons)
+import Foreign.Object          as F
+import Screeps.Game            as Game
+import Screeps.Memory          as Memory
 import Screeps.Structure.Spawn as Spawn
-import Screeps.PathFinder as PF
-import Screeps.Const (find_sources)
-import Foreign.Object as F
-import Memory (freeCreepMemory)
-import Manager (manageCreeps, manageJobs, calcMaxCreeps)
-import Monitor (monitorCreeps)
-import Processor (processCreeps, numberOfRole)
-import Preformer (preformCreeps)
-import Builder (buildRoom)
-import Data (LoopStatus(..), Role(..), Job(..), CreepCounts(..))
+import Screeps.Data
+import Monitor ( monitorCreeps )
+import Manager ( manageCreeps, manageJobs )
+import Builder ( buildRoom )
+import Processor ( processCreeps )
+import Preformer ( preformCreeps )
+import CorpseGrinder
+import Memory
 import Spawn
-import CG
+import Data
 
+-- | main sets up a reader monad over effect,
+-- | inits the environment, then runs the monadic action
 main ∷ Effect Unit
 main = do
   m  ← Memory.getMemoryGlobal
   g  ← Game.getGameGlobal
-  pf ← PF.getPathFinderGlobal
+  -- certain values like the time are not worth accessing
+  -- each time we want it, it is checked each tick anyways
   let t = Game.time g
-  runCG corpseGrinder { memory:m, game:g, pf:pf, time:t }
-corpseGrinder ∷ CG Env Unit
+  runCG corpseGrinder { memory:m, game:g, time:t }
+-- | the corpsegrinder sets the status of the loop, then find
+-- | a list of spawns, and does work for each one
+corpseGrinder ∷ CorpseGrinder Env Unit
 corpseGrinder = do
   loopStatus ← getMemField "loopStatus"
   case loopStatus of
-      Nothing  → setMemField "loopStatus" LoopStart
-      Just ls0 → do
-        game ← asks (_.game)
-        let spawn1 = F.lookup "Spawn1" spawnsList
-            spawnsList = Game.spawns game
-        case spawn1 of
-          Nothing → pure unit
-          Just s1 → runSpawnEnv (runCorpsegrinder ls0) { spawn:s1, mem:mem }
-            where mem = Spawn.memory s1
-runCorpsegrinder ∷ LoopStatus → Spwn Unit
-runCorpsegrinder LoopStart       = do
-  log'' LogInfo "starting the corpsegrinder..."
-  setMemField' "loopStatus" LoopGo
-  setMemField' "utility"    0
-  initSpawn
-  manageCreeps
-runCorpsegrinder LoopGo          = do
-  time ← lift $ asks (_.time)
-  -- the following functions will get called once every 12 ticks
+    Nothing → do
+      setMemField "loopStatus" LoopStart
+      spawnsList' ← getSpawns
+      let spawnsList = F.toArrayWithKey (\_ a → a) spawnsList'
+      manageSpawns spawnsList
+    Just LoopReset → do
+      -- TODO: clear memory here
+      pure unit
+    Just LoopStart → do
+      log' LogInfo "starting the corpsegrinder..."
+      setMemField "loopStatus" LoopGo
+      setMemField "utility"    0
+      spawnsList' ← getSpawns
+      let spawnsList = F.toArrayWithKey (\_ a → a) spawnsList'
+      initSpawns spawnsList
+    Just LoopGo → do
+      time        ← getTime
+      case time `mod` 12 of
+        0 → freeCreepMemory
+        _ → pure unit
+      spawnsList' ← getSpawns
+      let spawnsList = F.toArrayWithKey (\_ a → a) spawnsList'
+      manageSpawns spawnsList
+    Just (LoopError str) → log' LogError str
+    Just LoopNULL        → log' LogError "LoopNULL"
+manageSpawns ∷ Array Spawn → CorpseGrinder Env Unit
+manageSpawns []     = pure unit
+manageSpawns spawns =
+  case uncons spawns of
+    Nothing                     → pure unit
+    Just {head:s0,tail:spawns'} → do
+      let mem = Spawn.memory s0
+      runSE manageSpawn { spawn:s0, mem:mem }
+      manageSpawns spawns'
+manageSpawn ∷ Spwn Unit
+manageSpawn = do
+  time ← getTime'
   case time `mod` 12 of
-    -- free memory associated with dead creeps
-    0 → freeCreepMemory
-    -- prints whatever
-    --1 → consoleClear
-    --2 → printDebug
-    -- monitors changes to the game state and sets memory accordingly
-    3 → lift monitorCreeps
+    3 → monitorCreeps
     5 → manageCreeps
-    6 → lift manageJobs
-    9 → lift buildRoom
+    6 → manageJobs
+    9 → buildRoom
     _ → pure unit
-  lift $ processCreeps time
-  lift preformCreeps
-runCorpsegrinder LoopReset       = do
-  log'' LogInfo $ "resetting the corpsegrinder"
-  lift $ clearMem
-  setMemField' "loopStatus" LoopGo
-  setMemField' "utility"    0
-  initSpawn
-  manageCreeps
-runCorpsegrinder (LoopError str) = log'' LogError $ "Error: " <> str
-runCorpsegrinder LoopNULL        = pure unit
-runCorpsegrinder ls = pure unit
-
-printDebug ∷ Spwn Unit
-printDebug = do
-  s1 ← asks (_.spawn)
-  creeps' ← getMemField' "creeps"
-  let creeps = case creeps' of
-                 Nothing → F.empty
-                 Just c0 → c0
-  let n         = length $ Room.find (RO.room s1) find_sources
-  maxCreeps ← lift $ calcMaxCreeps n s1
-  let nHarv     = numberOfRole RoleHarvester         creeps
-      nUpgrader = numberOfRole RoleUpgrader          creeps
-      nWorker   = numberOfRole (RoleWorker  JobNULL) creeps
-      nBldr     = numberOfRole (RoleBuilder 0)       creeps
-      CreepCounts ({nPeon,nCollier,nHauler,nGrunt}) = maxCreeps
-  log'' LogDebug "  ------- creep counts -------"
-  log'' LogDebug $ "nPeon: " <> (show nPeon) <> ", nCollier: "  <> (show nCollier)
-  log'' LogDebug $ "nGrnt: " <> (show nGrunt) <> ", nHauler: "   <> (show nHauler)
-  log'' LogDebug "  -------- job counts --------"
-  log'' LogDebug $ "nHarv: " <> (show nHarv) <> ", nUpgrader: " <> (show nUpgrader)
-  log'' LogDebug $ "nBldr: " <> (show nBldr) <> ", nWorker: "   <> (show nWorker)
+  processCreeps
+  preformCreeps
