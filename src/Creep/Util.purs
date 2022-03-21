@@ -51,12 +51,21 @@ findAndSetDestAndTarget RoleHarvester = do
     case (findOpenSource harvSs sources) of
       Nothing  → pure $ RO.pos creep
       Just source → do
-        setCreepMemField' "target" (Source.id source)
-        setCreepMemField' "dest"   $ posToSpot (RO.pos source)
-        case spawn of
-          Nothing → pure unit
-          Just s2 → lift $ lift $ setNHarvs harvSs (Source.id source) s2
-        pure $ RO.pos source
+        targId ← getCreepMemField "target"
+        let targId' = targId ∷ Maybe (Id Source)
+        case targId of
+          Nothing → do
+            setCreepMemField' "target" (Source.id source)
+            setCreepMemField' "dest"   $ posToSpot (RO.pos source)
+            case spawn of
+              Nothing → pure unit
+              Just s2 → lift $ lift $ setNHarvs harvSs (Source.id source) s2
+            pure $ RO.pos source
+          Just tid → do
+            setCreepMemField' "target" (Source.id source)
+            setCreepMemField' "dest"   $ posToSpot (RO.pos source)
+            pure $ RO.pos source
+
   else do
     let targets = Room.find' (RO.room creep) find_structures hasFreeSpace
     case (findNearest targets (RO.pos creep)) of
