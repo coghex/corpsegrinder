@@ -13,7 +13,7 @@ import Screeps.Const ( resource_energy, find_my_spawns
                      , find_sources, find_structures )
 import Screeps.Data
 import Data
-import Util ( findOpenSource, posToSpot, setNHarvs
+import Util ( findOpenSource, posToSpot, setNHarvs, removeNHarvs
             , hasFreeSpace, findNearest )
 import Spawn
 import Creep
@@ -64,7 +64,14 @@ findAndSetDestAndTarget RoleHarvester = do
           Just tid → do
             setCreepMemField' "target" (Source.id source)
             setCreepMemField' "dest"   $ posToSpot (RO.pos source)
-            pure $ RO.pos source
+            if tid ≠ (Source.id source) then do
+              case spawn of
+                Nothing → pure unit
+                Just s2 → do
+                  lift $ lift $ setNHarvs harvSs (Source.id source) s2
+                  lift $ lift $ removeNHarvs harvSs tid s2
+              pure $ RO.pos source
+            else pure $ RO.pos source
 
   else do
     let targets = Room.find' (RO.room creep) find_structures hasFreeSpace
